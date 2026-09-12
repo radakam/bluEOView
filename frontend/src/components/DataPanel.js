@@ -1,210 +1,172 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Alert, Typography, CircularProgress } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Alert, Box, CircularProgress, Typography } from '@mui/material';
+import ControlPanel from './ControlPanel';
 import GlobeDisplay from './GlobeDisplay';
 import MapDisplay from './MapDisplay';
-import { monthNames } from '../constants';
-import ControlPanel from './ControlPanel';
 import QualityPanel from './QualityPanel';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useMapData } from '../hooks/useMapData';
+import { ANNUAL_MONTH } from '../constants';
+import { figureTitle } from '../utils';
 
+/** How long the month slider must rest before the next grid is fetched. */
+const MONTH_DEBOUNCE_MS = 500;
+
+const NO_TITLES = { full: '', base: '' };
+
+/**
+ * Owns the current view (variable, month, map/globe, zoom) and pairs the
+ * controls with the figures they drive.
+ */
 const DataPanel = ({
-    panel,
-    setPanel,
-    debouncedMonth,
-    netcdfUrl,
-    debouncedUpdateMonth,
-    setArea,
-    selectedArea,
-    onMonthChange,
-    sharedZoom,
-    onSharedZoomChange,
-    openInfoModal,
-    featureOptions = [],
-    netcdfUrlInput,
-    setNetcdfUrlInput,
-    selectedDefault,
-    setSelectedDefault,
-    handleLoad,
-    featuresLoading,
-    featuresError,
-    allUrls,
-    timeLongName,
-    varInfo = null,
+  netcdfUrl,
+  sources,
+  onSelectSource,
+  featureOptions = [],
+  featuresLoading,
+  featuresError,
+  timeLongName,
+  varInfo = null,
+  openInfoModal,
 }) => {
-    const [showStd, setShowStd] = useState(false);
-    const [showObs, setShowObs] = useState(false);
+  const [feature, setFeature] = useState(null);
+  const [month, setMonth] = useState(ANNUAL_MONTH);
+  const [view, setView] = useState('map');
+  const [zoomedArea, setZoomedArea] = useState(null);
+  const [showStd, setShowStd] = useState(false);
+  const [showObs, setShowObs] = useState(false);
 
-    const [mapData, setMapData] = useState(null);
-    const [dataLoading, setDataLoading] = useState(false);
-    const [dataError, setDataError] = useState(null);
+  const debouncedMonth = useDebouncedValue(month, MONTH_DEBOUNCE_MS);
+  const { mapData, loading, error } = useMapData({
+    file: netcdfUrl,
+    feature,
+    timeIndex: debouncedMonth,
+  });
 
-    const [committedTitle, setCommittedTitle] = useState('');
-    const [committedBaseTitle, setCommittedBaseTitle] = useState('');
+  // Follow the dataset: keep the selected variable if it still exists, else take the first.
+  useEffect(() => {
+    setFeature((current) => {
+      if (!featureOptions.length) return null;
+      return featureOptions.some((f) => f.value === current) ? current : featureOptions[0].value;
+    });
+  }, [featureOptions]);
 
-    useEffect(() => { setShowObs(false); }, [netcdfUrl]);
+  useEffect(() => setShowObs(false), [netcdfUrl]);
 
-    useEffect(() => {
-        if (!featureOptions.length) {
-            if (panel.feature !== null) setPanel(prev => ({ ...prev, feature: null }));
-            return;
-        }
-        const exists = featureOptions.some(f => f.value === panel.feature);
-        if (!exists) setPanel(prev => ({ ...prev, feature: featureOptions[0].value }));
-    }, [featureOptions, panel.feature, setPanel]);
+  // Titles are committed only once the matching grids arrive, so the heading
+  // never describes a figure that is still loading.
+  const [titles, setTitles] = useState(NO_TITLES);
+  const featureLabel = featureOptions.find((f) => f.value === feature)?.label ?? feature ?? '';
 
-    const isAnnual = panel.month === 13;
-    const currentFeatureLabel =
-        featureOptions.find(f => f.value === panel.feature)?.label ?? panel.feature ?? '';
-    const pendingTitle = `${currentFeatureLabel} ${isAnnual ? 'Annual' : 'in ' + monthNames[panel.month]}`;
+  useEffect(() => {
+    if (!mapData) return;
+    setTitles({ full: figureTitle(featureLabel, debouncedMonth), base: featureLabel });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapData]);
 
-    useEffect(() => {
-        if (!panel.feature || !netcdfUrl) return;
+  const displayProps = {
+    mapData,
+    fullTitle: titles.full,
+    baseTitle: titles.base,
+    titleLoading: loading,
+    showStd,
+    showObs,
+    varInfo,
+    loading,
+    error,
+  };
 
-        const controller = new AbortController();
-
-        const fetchData = async () => {
-            setDataLoading(true);
-            setDataError(null);
-            try {
-                const params = new URLSearchParams({
-                    feature: panel.feature,
-                    timeIndex: debouncedMonth.toString(),
-                    file: netcdfUrl,
-                });
-                const res = await fetch(`/api/diversity-map?${params}`, {
-                    signal: controller.signal,
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const json = await res.json();
-
-                const sdGlobalMax = json.sdGlobalMax ?? json.sdMax ?? null;
-                const sdPct = (sdGlobalMax > 0 && json.sd?.length)
-                    ? json.sd.map(row =>
-                        row.map(v => v === null ? null : Math.round(v / sdGlobalMax * 100 * 10) / 10)
-                    )
-                    : (json.sd ?? []);
-
-                setMapData({
-                    lats: json.lats ?? [],
-                    lons: json.lons ?? [],
-                    mean: json.mean ?? [],
-                    sdPct,
-                    obs: json.obs ?? [],
-                    obsMax: json.obsMax ?? null,
-                    obsType: json.obsType ?? null,
-                    hasObs: json.hasObs ?? false,
-                    minValue: json.minValue ?? null,
-                    maxValue: json.maxValue ?? null,
-                });
-
-                setCommittedTitle(pendingTitle);
-                setCommittedBaseTitle(currentFeatureLabel);
-            } catch (err) {
-                if (err.name !== 'AbortError') setDataError(err.message);
-            } finally {
-                setDataLoading(false);
-            }
-        };
-
-        fetchData();
-        return () => controller.abort();
-    }, [debouncedMonth, panel.feature, netcdfUrl]);
-
-    const handleMonthCommit = useCallback((val) => {
-        setPanel(prev => ({ ...prev, month: val }));
-        debouncedUpdateMonth(val);
-        onMonthChange?.(val);
-    }, [setPanel, debouncedUpdateMonth, onMonthChange]);
-
-    const sharedDisplayProps = {
-        fullTitle: committedTitle,
-        baseTitle: committedBaseTitle,
-        titleLoading: dataLoading,
-        featureOptions,
-        mapData,
-        showStd,
-        showObs,
-        varInfo,
-        loading: dataLoading,
-        error: dataError,
-    };
-
-    return (
-        <Box sx={{ p: 2, backgroundColor: 'rgba(0, 0, 0, 0.25)', borderRadius: 1, display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'column', lg: 'row' },
-                gap: 1,
-                mb: 2,
-                width: '100%',
-                alignItems: 'stretch',
-            }}>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <ControlPanel
-                        feature={panel.feature}
-                        featureOptions={featureOptions}
-                        onFeatureChange={(e) => setPanel(prev => ({ ...prev, feature: e.target.value }))}
-                        openInfoModal={openInfoModal}
-                        month={panel.month}
-                        onMonthChange={handleMonthCommit}
-                        view={panel.view}
-                        onViewChange={(val) => setPanel(prev => ({ ...prev, view: val }))}
-                        netcdfUrl={netcdfUrlInput}
-                        setNetcdfUrl={setNetcdfUrlInput}
-                        selectedDefault={selectedDefault}
-                        setSelectedDefault={setSelectedDefault}
-                        handleLoad={handleLoad}
-                        featuresLoading={featuresLoading}
-                        featuresError={featuresError}
-                        allUrls={allUrls}
-                        timeLongName={timeLongName}
-                        showStd={showStd}
-                        onToggleStd={() => setShowStd(v => !v)}
-                        showObs={showObs}
-                        onToggleObs={() => setShowObs(v => !v)}
-                        hasObs={mapData?.hasObs ?? false}
-                    />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <QualityPanel
-                        netcdfUrl={netcdfUrlInput}
-                        feature={panel.feature}
-                        openInfoModal={openInfoModal}
-                    />
-                </Box>
-            </Box>
-
-            <Box sx={{ flex: '1 1 auto', position: 'relative', width: '100%', minHeight: '400px' }}>
-                {panel.feature ? (
-                    <>
-                        {panel.view === 'map' && (
-                            <MapDisplay
-                                {...sharedDisplayProps}
-                                selectedArea={selectedArea}
-                                onZoomedAreaChange={(area) => { setArea(area); onSharedZoomChange?.(area); }}
-                                zoomedArea={sharedZoom}
-                            />
-                        )}
-                        {panel.view === 'globe' && (
-                            <GlobeDisplay {...sharedDisplayProps} />
-                        )}
-                    </>
-                ) : (
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', p: 3 }}>
-                        {(featuresLoading || dataLoading) ? (
-                            <>
-                                <CircularProgress color="primary" sx={{ mb: 2 }} />
-                                <Typography variant="h6" color="white">Loading dataset features...</Typography>
-                            </>
-                        ) : (
-                            <Alert severity="error" sx={{ maxWidth: '600px' }}>
-                                File not found or not in the correct format.
-                            </Alert>
-                        )}
-                    </Box>
-                )}
-            </Box>
+  return (
+    <Box
+      sx={{
+        p: 2,
+        backgroundColor: 'rgba(0, 0, 0, 0.25)',
+        borderRadius: 1,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', lg: 'row' },
+          gap: 1,
+          mb: 2,
+          width: '100%',
+          alignItems: 'stretch',
+        }}
+      >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <ControlPanel
+            feature={feature}
+            featureOptions={featureOptions}
+            onFeatureChange={(e) => setFeature(e.target.value)}
+            openInfoModal={openInfoModal}
+            month={month}
+            onMonthChange={setMonth}
+            view={view}
+            onViewChange={setView}
+            sources={sources}
+            selectedSource={netcdfUrl}
+            onSelectSource={onSelectSource}
+            featuresLoading={featuresLoading}
+            timeLongName={timeLongName}
+            showStd={showStd}
+            onToggleStd={() => setShowStd((v) => !v)}
+            showObs={showObs}
+            onToggleObs={() => setShowObs((v) => !v)}
+            hasObs={mapData?.hasObs ?? false}
+          />
         </Box>
-    );
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <QualityPanel
+            netcdfUrl={netcdfUrl}
+            feature={feature}
+            openInfoModal={openInfoModal}
+          />
+        </Box>
+      </Box>
+
+      <Box sx={{ flex: '1 1 auto', position: 'relative', width: '100%', minHeight: '400px' }}>
+        {feature ? (
+          view === 'map' ? (
+            <MapDisplay
+              {...displayProps}
+              zoomedArea={zoomedArea}
+              onZoomedAreaChange={setZoomedArea}
+            />
+          ) : (
+            <GlobeDisplay {...displayProps} />
+          )
+        ) : (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              p: 3,
+            }}
+          >
+            {featuresError ? (
+              <Alert severity="error" sx={{ maxWidth: '600px' }}>
+                {featuresError}
+              </Alert>
+            ) : (
+              <>
+                <CircularProgress color="primary" sx={{ mb: 2 }} />
+                <Typography variant="h6" color="white">
+                  Loading dataset features...
+                </Typography>
+              </>
+            )}
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
 };
 
 export default DataPanel;

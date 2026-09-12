@@ -1,91 +1,146 @@
-export const generateColorStops = (colors) => {
-    return colors.map((color, i) => [
-        parseFloat((i / (colors.length - 1)).toFixed(4)),
-        color
-    ]);
+// Pure helpers for colour scales, legends and label formatting.
+
+import { ANNUAL_MONTH, MONTH_OPTIONS, SD_COLORSCALE } from './constants';
+
+// --- labels ---------------------------------------------------------------
+
+export const monthLabel = (month) =>
+  MONTH_OPTIONS.find((o) => o.value === month)?.label ?? '';
+
+/** "Copepods in March" / "Copepods Annual", as shown above a figure. */
+export const figureTitle = (featureLabel, month) =>
+  month === ANNUAL_MONTH
+    ? `${featureLabel} Annual`
+    : `${featureLabel} in ${monthLabel(month)}`;
+
+/** Observations are counts for taxa datasets and presence/absence for diversity. */
+export const observationTitle = (baseTitle, obsType) =>
+  obsType === 'diversity'
+    ? `${baseTitle} Observations`
+    : `${baseTitle} Observation Density`;
+
+/** Second title line of a figure, built from the NetCDF variable attributes. */
+export const variableSubtitle = (varInfo, key) => {
+  const parts = [varInfo?.[key]?.standard_name, varInfo?.[key]?.long_name].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
 };
+
+// --- colour scales --------------------------------------------------------
+
+/** Evenly spaced stops, one per colour: a continuous gradient. */
+export const colorStops = (colors) =>
+  colors.map((color, i) => [parseFloat((i / (colors.length - 1)).toFixed(4)), color]);
+
+/** Two stops per colour, which makes Plotly draw discrete bands instead of a ramp. */
+export const bandedColorStops = (colors) =>
+  colors.flatMap((color, i) => [
+    [i / colors.length, color],
+    [(i + 1) / colors.length, color],
+  ]);
 
 export const hexToRgb = (hex) => {
-    const normalized = hex.replace('#', '');
-    const fullHex = normalized.length === 3
-        ? normalized.split('').map(c => c + c).join('')
-        : normalized;
+  const normalized = hex.replace('#', '');
+  const fullHex =
+    normalized.length === 3
+      ? normalized.split('').map((c) => c + c).join('')
+      : normalized;
 
-    const value = parseInt(fullHex, 16);
-    return {
-        r: (value >> 16) & 255,
-        g: (value >> 8) & 255,
-        b: value & 255,
-    };
+  const value = parseInt(fullHex, 16);
+  return {
+    r: (value >> 16) & 255,
+    g: (value >> 8) & 255,
+    b: value & 255,
+  };
 };
 
-export const getInterpolatedColorFromValue = (value, min, max, colorStops) => {
-    if (value == null || !isFinite(value)) return 'rgba(0,0,0,0)';
-    if (min === max) return colorStops[colorStops.length - 1][1];
+/** Colour for `value` on `stops`, linearly interpolating between the two it falls between. */
+export const getInterpolatedColorFromValue = (value, min, max, stops) => {
+  if (value == null || !isFinite(value)) return 'rgba(0,0,0,0)';
+  if (min === max) return stops[stops.length - 1][1];
 
-    const norm = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const norm = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
-    // Find the two surrounding stops
-    for (let i = 0; i < colorStops.length - 1; i++) {
-        const [start, startColor] = colorStops[i];
-        const [end, endColor] = colorStops[i + 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    const [start, startColor] = stops[i];
+    const [end, endColor] = stops[i + 1];
+    if (norm < start || norm > end) continue;
 
-        if (norm >= start && norm <= end) {
-            const span = end - start;
-            // If stops are at the same position, return the end color directly
-            if (span === 0) return endColor;
+    const span = end - start;
+    if (span === 0) return endColor;
 
-            const ratio = (norm - start) / span;
-            const rgbStart = hexToRgb(startColor);
-            const rgbEnd = hexToRgb(endColor);
+    const ratio = (norm - start) / span;
+    const from = hexToRgb(startColor);
+    const to = hexToRgb(endColor);
+    const mix = (a, b) => Math.round(a + ratio * (b - a));
 
-            const r = Math.round(rgbStart.r + ratio * (rgbEnd.r - rgbStart.r));
-            const g = Math.round(rgbStart.g + ratio * (rgbEnd.g - rgbStart.g));
-            const b = Math.round(rgbStart.b + ratio * (rgbEnd.b - rgbStart.b));
+    return `rgb(${mix(from.r, to.r)},${mix(from.g, to.g)},${mix(from.b, to.b)})`;
+  }
 
-            return `rgb(${r},${g},${b})`;
-        }
-    }
-
-    return colorStops[colorStops.length - 1][1];
+  return stops[stops.length - 1][1];
 };
 
-export const getLegendFromColorscale = (colorscale, minValue, maxValue) => {
-    // colorscale is now one entry per color (not doubled), so length = numBins
-    const numBins = colorscale.length;
-    const { ticktext } = generateColorbarTicks(minValue, maxValue, numBins);
-    const binColors = colorscale.map(([_, color]) => color);
-    return { colors: binColors, labels: ticktext };
-};
+/** Colour for a standard deviation expressed as a percentage of its global maximum. */
+export const interpolateSdColor = (percent) =>
+  getInterpolatedColorFromValue(percent, 0, 100, SD_COLORSCALE);
 
-export const getLegendFromColorscaleLog = (colorscale, max) => {
-    if (max == null || max <= 0) return { colors: [], labels: [] };
-    const numBins = colorscale.length;
-    const logMax = Math.log10(max + 1);
-    const binColors = colorscale.map(([_, color]) => color);
-    const labels = binColors.map((_, i) => {
-        const normMid = (i + 0.5) / numBins;
-        const originalVal = Math.pow(10, normMid * logMax) - 1;
-        return originalVal < 1 ? '<1' : String(Math.round(originalVal));
-    });
-    return { colors: binColors, labels };
-};
+// --- legends --------------------------------------------------------------
 
+/** `numBins` evenly spaced tick values between min and max, plus their labels. */
 export const generateColorbarTicks = (min, max, numBins) => {
-    if (min == null || max == null) return { tickvals: [], ticktext: [] };
+  if (min == null || max == null) return { tickvals: [], ticktext: [] };
 
-    const range = max - min;
-    const step = range / (numBins - 1);
-    const precision = range >= 10 ? 0 : 2;
+  const range = max - min;
+  const step = range / (numBins - 1);
+  const precision = range >= 10 ? 0 : 2;
 
-    const tickvals = [];
-    const ticktext = [];
+  const tickvals = [];
+  const ticktext = [];
 
-    for (let i = 0; i < numBins; i++) {
-        const val = min + step * i;
-        tickvals.push(parseFloat(val.toFixed(precision)));
-        ticktext.push(val.toFixed(precision));
-    }
+  for (let i = 0; i < numBins; i++) {
+    const val = min + step * i;
+    tickvals.push(parseFloat(val.toFixed(precision)));
+    ticktext.push(val.toFixed(precision));
+  }
 
-    return { tickvals, ticktext };
+  return { tickvals, ticktext };
+};
+
+export const getLegendFromColorscale = (stops, minValue, maxValue) => {
+  const { ticktext } = generateColorbarTicks(minValue, maxValue, stops.length);
+  return { colors: stops.map(([, color]) => color), labels: ticktext };
+};
+
+/** Legend for observation counts, which are drawn on a log10(count + 1) scale. */
+export const getLegendFromColorscaleLog = (stops, max) => {
+  if (max == null || max <= 0) return { colors: [], labels: [] };
+
+  const logMax = Math.log10(max + 1);
+  const colors = stops.map(([, color]) => color);
+  const labels = colors.map((_, i) => {
+    const binMidpoint = (i + 0.5) / stops.length;
+    const value = Math.pow(10, binMidpoint * logMax) - 1;
+    return value < 1 ? '<1' : String(Math.round(value));
+  });
+
+  return { colors, labels };
+};
+
+/** Decade ticks (1, 10, 100 …) for a log10(count + 1) colour bar. */
+export const logColorbarTicks = (max) => {
+  const maxValue = max ?? 1;
+  const logMax = Math.log10(maxValue + 1);
+  const tickvals = [0];
+  const ticktext = ['0'];
+
+  for (let exp = 0; Math.pow(10, exp) <= maxValue; exp++) {
+    const value = Math.pow(10, exp);
+    tickvals.push(Math.log10(value + 1));
+    ticktext.push(String(value));
+  }
+  if (Math.pow(10, Math.floor(Math.log10(maxValue))) < maxValue) {
+    tickvals.push(logMax);
+    ticktext.push(String(Math.round(maxValue)));
+  }
+
+  return { tickvals, ticktext, zmin: 0, zmax: logMax };
 };

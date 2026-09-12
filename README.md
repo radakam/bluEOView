@@ -6,45 +6,89 @@ This web application provides interactive visualizations of CEPHALOPOD using a F
 
 - [Features](#features)
 - [Components](#components)
+- [Project Structure](#project-structure)
+- [Running with Docker](#running-with-docker)
 - [Installation](#installation)
-- [Server Configuration](#server-configuration)
-- [Deployment](#deployment)
 - [Firewall Configuration](#firewall-configuration)
-- [Usage](#usage)
 - [License](#license)
 
 ## Features
 
-- **Filters and Modal Components**: Adjust data displayed by changing indices, plankton groups, climate scenarios, earth system models, and environmental parameters.
-- **Time Slider**: View data for any year from 2012 to 2100.
-- **Flat Map Visualization**: View geographical data on a flat 2D map.
-- **Interactive Globe Display**: Visualize marine plankton diversity on a 3D globe.
-- **Line Plot**: Display trends over time for a selected point or region.
-<!-- - **Region Selection**: Toggle between point or region selection for the line plot. -->
+- **Dataset selector**: Choose one of the NetCDF projections published on the BlueCloud infrastructure, or load any NetCDF file by URL.
+- **Variable selector**: Searchable list of the targets in the dataset, with a link to the WoRMS record where the file carries an AphiaID.
+- **Time frame**: Switch between the annual mean and a single month, with a slider over the twelve months.
+- **Flat map visualisation**: 2D map of the projection, drawn with `react-plotly.js`, with zoom and pan.
+- **Interactive globe display**: The same data on a 3D globe, drawn with `react-globe.gl`.
+- **Standard deviation and observations**: Optional side-by-side panels; cells whose standard deviation exceeds half the global maximum are hatched on the map and dimmed on the globe.
+- **Quality control**: Per-algorithm traffic-light table with the recommendation stored in the file.
+- **References**: Method paper plus the global attributes of the loaded dataset.
 
 ## Components
 
-### 1. **Filters and Modal Components**
-- Displays explanatory text and information related to the selected index, plankton group, or model.
-- Controlled by various buttons on the interface.
+### `DataPanel`
+Owns the current view — variable, month, map or globe, and the shared zoom — and pairs the control panels with the figures they drive.
 
-### 2. **Slider Component**
-- Allows users to adjust the year of the displayed data dynamically.
-- The globe, map, and line plot update accordingly.
+### `ControlPanel`
+Source, variable and time-frame pickers, the map/globe switch, and the toggles for the standard-deviation and observation panels.
 
-### 3. **MapDisplay Component**
-- Provides a 2D flat map view of the data using `react-plotly.js`.
-- Data is color-coded, and the color scale can be customized for positive and negative values.
-- Supports point or region selection for generating line plots.
+### `QualityPanel`
+Quality-control table for the selected variable, or a note when the file has been pre-filtered and carries no QC data.
 
-### 4. **GlobeDisplay Component**
-- Displays marine plankton data on a 3D globe.
-- Data is fetched for the selected year and displayed with color-coded markers.
-- Uses `react-globe.gl` and `d3-scale` for the color scale.
-- Supports interaction like zooming, rotating, and clicking on points.
+### `MapDisplay`
+2D map panels drawn with `react-plotly.js`. Values use a banded viridis scale; uncertain cells are hatched on a canvas overlay, since Plotly cannot pattern-fill a heatmap.
 
+### `GlobeDisplay`
+The same panels on a 3D globe drawn with `react-globe.gl`, sampling every third grid cell and with a hand-drawn colour legend.
+
+### `InfoModal` / `ReferencesModal` / `WormsModal`
+Explanatory text, dataset references, and the taxonomic classification fetched from the WoRMS registry.
+
+## Project Structure
+
+```
+backend/
+  app.py        Flask app: configuration, blueprints, CLI commands
+  api.py        HTTP handlers for /api/*
+  datasets.py   NetCDF loading, caching and derived values
+  quality.py    Quality-control table extraction
+  storage.py    Download cache on disk
+  config.py     Environment-derived settings
+
+frontend/src/
+  api/          Calls to the backend and to the WoRMS registry
+  hooks/        Data fetching and DOM measurement hooks
+  components/   Components; common/ holds the shared building blocks
+  styles/       Style objects shared between components
+  constants.js  Colour scales, thresholds and other fixed data
+  content.js    User-facing copy
+  utils.js      Pure helpers for scales, legends and labels
+```
+
+## Running with Docker
+
+`docker-compose.yml` builds both services and is the quickest way to run the whole
+application:
+
+```sh
+docker compose up --build
+```
+
+The frontend is then served by nginx on <http://localhost:8080>, which proxies
+`/api` to the Flask backend on port 5000. NetCDF files are cached in
+`backend/data/`, mounted into the backend container at `/var/cephaloview_data`.
+On boot the backend removes the files downloaded for user-supplied URLs and
+refreshes the published datasets with `wget`.
+
+Optional environment variables for the backend service:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DATA_URL` | `https://data.up.ethz.ch/shared/Blueoview_data` | Remote directory the published datasets come from. |
+| `STORAGE_DIR` | `/var/cephaloview_data` | Local cache directory. |
 
 ## Installation
+
+The steps below set the application up directly on a server, without Docker.
 
 ### Prerequisites
 
@@ -221,3 +265,7 @@ To allow access from a specific IP address (replace xxx.xxx.xxx.xxx with the act
 
 `ACCEPT net fw tcp 80,443`\
 `sudo systemctl reload shorewall`
+
+## License
+
+Released under the MIT License. See [LICENSE](LICENSE).

@@ -1,70 +1,39 @@
-# Getting Started with Create React App
+# CEPHALOView frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React single-page app that renders the CEPHALOPOD projections served by the
+Flask backend in [`../backend`](../backend). See the [project README](../README.md)
+for the architecture and deployment instructions.
 
-## Available Scripts
+## Development
 
-In the project directory, you can run:
+```sh
+bun install          # or: npm install
+npm start            # dev server on http://localhost:3000
+```
 
-### `npm start`
+`package.json` sets `"proxy": "http://127.0.0.1:5000"`, so `/api/*` requests from
+the dev server reach a backend running locally on port 5000.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Scripts
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+| Command | Purpose |
+| --- | --- |
+| `npm start` | Development server with hot reload. |
+| `npm test` | Jest test suite (`src/**/*.test.js`). |
+| `npm run build` | Production bundle in `build/`, as served by nginx in the image. |
 
-### `npm test`
+## Layout
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+src/
+  api/          Calls to the backend and to the WoRMS registry
+  hooks/        Data fetching and DOM measurement hooks
+  components/   Components; common/ holds the shared building blocks
+  styles/       Style objects shared between components
+  constants.js  Colour scales, thresholds and other fixed data
+  content.js    User-facing copy
+  utils.js      Pure helpers for scales, legends and labels
+```
 
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Components hold markup and behaviour; anything reusable and purely visual lives
+in `styles/`, and anything that talks to the network lives in `api/` and `hooks/`.

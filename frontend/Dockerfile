@@ -13,11 +13,9 @@ RUN apt-get update && apt-get install -y curl unzip \
 ENV PATH="/root/.bun/bin:$PATH"
 
 # Copy package files to leverage Docker layer caching
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock ./
 
-RUN bun add -d react-app-rewired
-
-# 🚀 Use Bun to install dependencies at lightning speed
+# 🚀 Use Bun to install dependencies at lightning speed, exactly as locked
 RUN bun install --frozen-lockfile
 
 # Copy the rest of your frontend source code

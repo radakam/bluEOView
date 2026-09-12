@@ -1,120 +1,103 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Typography,
-    Button,
-    Box,
-    Collapse,
-    Link,
-    FormControlLabel,
-    Checkbox
+  Box,
+  Button,
+  Checkbox,
+  Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  Link,
+  Typography,
 } from '@mui/material';
+import { frostedDialogSx } from '../styles/panels';
 
-function InfoModal({
-    open,
-    onClose,
-    title,
-    shortText,
-    longText,
-    buttonText = 'Close',
-    onDontShowAgainChange,
-    showDontShowAgain = false,
-}) {
-    const [showFullText, setShowFullText] = useState(false);
-    const [dontShowAgain, setDontShowAgain] = useState(false);
+const HIDE_WELCOME_KEY = 'hideProjectExplanation';
 
-    useEffect(() => {
-        if (open) {
-            setShowFullText(false);
-            setDontShowAgain(false);
-        }
-    }, [open]);
+/**
+ * Explanatory dialog: a short text, an optional "Learn More" section, and an
+ * optional opt-out that is remembered in localStorage.
+ */
+const InfoModal = ({
+  open,
+  onClose,
+  title,
+  shortText,
+  longText,
+  buttonText = 'Close',
+  showDontShowAgain = false,
+}) => {
+  const [showFullText, setShowFullText] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
-    const handleToggleExpand = () => setShowFullText(prev => !prev);
+  useEffect(() => {
+    if (!open) return;
+    setShowFullText(false);
+    setDontShowAgain(false);
+  }, [open]);
 
-    const handleCheckboxChange = (event) => {
-        const checked = event.target.checked;
-        setDontShowAgain(checked);
-        if (onDontShowAgainChange) {
-            onDontShowAgainChange(checked);
-        }
-    };
+  const handleClose = () => {
+    if (showDontShowAgain) {
+      if (dontShowAgain) localStorage.setItem(HIDE_WELCOME_KEY, 'true');
+      else localStorage.removeItem(HIDE_WELCOME_KEY);
+    }
+    onClose();
+  };
 
-    const handleClose = () => {
-        if (dontShowAgain) {
-            localStorage.setItem('hideProjectExplanation', 'true');
-        } else {
-            localStorage.removeItem('hideProjectExplanation');
-        }
-        onClose();
-    };
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth sx={frostedDialogSx}>
+      <DialogTitle>{title}</DialogTitle>
 
-    return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            sx={{
-                '& .MuiPaper-root': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                    backdropFilter: 'blur(4px)',
-                },
-            }}
-        >
-            <DialogTitle>{title}</DialogTitle>
-            <DialogContent dividers>
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                    {shortText}
+      <DialogContent dividers>
+        <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+          {shortText}
+        </Typography>
+
+        {longText && (
+          <Box mt={2}>
+            <Link
+              component="button"
+              variant="body2"
+              underline="hover"
+              onClick={() => setShowFullText((prev) => !prev)}
+              sx={{ color: 'primary.main', fontWeight: 500 }}
+            >
+              {showFullText ? 'Show Less' : 'Learn More'}
+            </Link>
+
+            <Collapse in={showFullText}>
+              <Box mt={2}>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                  {longText}
                 </Typography>
+              </Box>
+            </Collapse>
+          </Box>
+        )}
 
-                {longText && (
-                    <Box mt={2}>
-                        <Link
-                            component="button"
-                            variant="body2"
-                            underline="hover"
-                            onClick={handleToggleExpand}
-                            sx={{ color: 'primary.main', fontWeight: 500 }}
-                        >
-                            {showFullText ? 'Show Less' : 'Learn More'}
-                        </Link>
+        {showDontShowAgain && (
+          <Box mt={3}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={dontShowAgain}
+                  onChange={(e) => setDontShowAgain(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Don’t show this again"
+            />
+          </Box>
+        )}
+      </DialogContent>
 
-                        <Collapse in={showFullText}>
-                            <Box mt={2}>
-                                <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
-                                    {longText}
-                                </Typography>
-                            </Box>
-                        </Collapse>
-                    </Box>
-                )}
-
-                {/* Optional Don't show again checkbox */}
-                {showDontShowAgain && (
-                    <Box mt={3}>
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={dontShowAgain}
-                                    onChange={handleCheckboxChange}
-                                    color="primary"
-                                />
-                            }
-                            label="Don’t show this again"
-                        />
-                    </Box>
-                )}
-            </DialogContent>
-
-            <DialogActions>
-                <Button onClick={handleClose}>{buttonText}</Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
+      <DialogActions>
+        <Button onClick={handleClose}>{buttonText}</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 export default InfoModal;
