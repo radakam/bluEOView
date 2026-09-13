@@ -1,5 +1,4 @@
-// Inline styles for the map and globe panels. These render plain DOM (Plotly and
-// react-globe.gl own their containers), so they use `style` rather than MUI `sx`.
+// Inline `style` objects for the map and globe panels, which render outside MUI.
 
 /** Matches `glassPanelSx`, so figures sit on the same card as the Control and Quality panels. */
 const SURFACE_BG = 'rgba(0,0,0,0.25)';
@@ -144,10 +143,8 @@ export const colorbarBase = {
 };
 
 /**
- * Plotly only pushes a right-side colour bar title clear of the tick labels it
- * overlaps, so a short unit such as '1' can sit in the gap between two labels.
- * Invisible padding makes the title span the labels whatever the bar's height;
- * it is wrapped in a span because Plotly trims the title text.
+ * Pads the colour bar title so Plotly always moves it clear of the tick labels;
+ * a short unit could otherwise land between them. The span stops Plotly trimming it.
  */
 const UNIT_TITLE_PADDING = `<span>${' '.repeat(60)}</span>`;
 

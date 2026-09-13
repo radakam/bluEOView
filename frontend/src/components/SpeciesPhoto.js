@@ -24,13 +24,7 @@ const Placeholder = ({ children }) => (
   <Box sx={{ ...frameSx, height: 'auto', py: 1.5, gap: 1.5 }}>{children}</Box>
 );
 
-/**
- * The WoRMS photograph of one taxon, fetched only once `enabled` turns true so
- * that browsing the variable list does not hit the registry.
- *
- * Plenty of taxa have no picture, so its absence is reported as a quiet line
- * rather than an error.
- */
+/** WoRMS photograph of one taxon, fetched only while `enabled`; a missing one is not an error. */
 const SpeciesPhoto = ({ aphiaId, enabled }) => {
   const { data, loading, error } = useAsyncData(
     (signal) => fetchSpeciesImage(aphiaId, signal),
@@ -74,8 +68,7 @@ const SpeciesPhoto = ({ aphiaId, enabled }) => {
         />
       </Box>
 
-      {/* The gallery also holds drawings and plates, so name the picture rather
-          than let it pass for a photograph of the animal. */}
+      {/* The gallery also holds drawings, so show what the picture is. */}
       {title && (
         <Typography sx={{ ...captionSx, color: 'text.primary', mt: 0.75 }}>{title}</Typography>
       )}

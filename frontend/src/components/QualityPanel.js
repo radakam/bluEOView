@@ -31,11 +31,7 @@ const UNKNOWN_COLOR = '#555';
 
 const STATUS_RANK = [STATUS_COLORS.pass, STATUS_COLORS.caution, STATUS_COLORS.fail];
 
-/**
- * The panel's status colour for a QC colour from the file. Files use their own
- * palette (e.g. #1F867B, #ffc800, #B64A60), so colours are classified by hue
- * and redrawn in `STATUS_COLORS`, keeping every dot consistent with the legend.
- */
+/** Maps a file's QC colour onto `STATUS_COLORS` by hue, so dots match the legend. */
 const statusColor = (color) => {
   const match = /^#?([0-9a-f]{6})$/i.exec(String(color ?? '').trim());
   if (!match) return UNKNOWN_COLOR;

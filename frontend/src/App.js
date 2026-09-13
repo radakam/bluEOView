@@ -12,10 +12,7 @@ import { APP_TITLE, welcomeLongText, welcomeShortText } from './content';
 import { errorTextSx } from './styles/panels';
 import './App.css';
 
-/**
- * Dataset shown on first load. The backend lists files alphabetically, which
- * puts the diversity-from-occurrence projection third.
- */
+/** Dataset shown on first load: diversity from occurrence, third alphabetically. */
 const INITIAL_DATASET_INDEX = 2;
 
 const App = () => {

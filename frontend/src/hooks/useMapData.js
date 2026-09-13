@@ -1,10 +1,7 @@
 import { fetchMap } from '../api/client';
 import { useAsyncData } from './useAsyncData';
 
-/**
- * Rescale the SD grid to a percentage of the variable's global SD maximum, so
- * the SD colour scale means the same thing across time steps.
- */
+/** SD grid as a percentage of its global maximum, so the scale is stable across months. */
 const toPercentOfMax = (grid, globalMax) => {
   if (!(globalMax > 0) || !grid?.length) return grid ?? [];
   return grid.map((row) =>
@@ -27,8 +24,7 @@ const normalise = (json) => ({
 
 /** Mean / SD / observation grids for one variable at one time step. */
 export const useMapData = ({ file, feature, timeIndex }) => {
-  // The previous grids stay on screen (behind a loading overlay) while the next
-  // ones are fetched, so the figure does not blink on every slider step.
+  // Keeps the previous grids visible while the next ones load, to avoid flicker.
   const { data, loading, error } = useAsyncData(
     async (signal) => normalise(await fetchMap({ file, feature, timeIndex }, signal)),
     [file, feature, timeIndex],

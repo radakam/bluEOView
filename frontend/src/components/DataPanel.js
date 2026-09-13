@@ -53,8 +53,7 @@ const DataPanel = ({
 
   useEffect(() => setShowObs(false), [netcdfUrl]);
 
-  // Titles are committed only once the matching grids arrive, so the heading
-  // never describes a figure that is still loading.
+  // Update titles only once the matching grids arrive.
   const [titles, setTitles] = useState(NO_TITLES);
   const featureLabel = featureOptions.find((f) => f.value === feature)?.label ?? feature ?? '';
 

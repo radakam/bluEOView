@@ -1,4 +1,3 @@
-# gunicorn_config.py
 import os
 
 # Bind to all interfaces. Changing API_PORT also means updating the port mapping
@@ -11,6 +10,6 @@ workers = 1
 
 timeout = 1200  # 20 min, since the first request for a dataset downloads it
 
-# Logging
-accesslog = "-" # Log to stdout for Docker logs
-errorlog = "-"  # Log to stderr for Docker logs
+# Log to the console, where Docker collects it.
+accesslog = "-"
+errorlog = "-"

@@ -1,8 +1,4 @@
-// World Register of Marine Species (WoRMS), queried directly from the browser.
-//
-// Only the REST API sends CORS headers, and it covers taxonomy alone.
-// Photographs live on WoRMS' HTML pages and are read server-side instead —
-// see `fetchSpeciesImage` in `api/client.js`.
+// WoRMS REST API, called from the browser. Photos go through the backend instead.
 
 const REST_BASE = 'https://www.marinespecies.org/rest';
 
@@ -10,10 +6,7 @@ const REST_BASE = 'https://www.marinespecies.org/rest';
 export const wormsTaxonUrl = (aphiaId) =>
   `https://www.marinespecies.org/aphia.php?p=taxdetails&id=${aphiaId}`;
 
-/**
- * Classification of a taxon, flattened from the nested `child` chain WoRMS
- * returns into an ordered list from kingdom down to the taxon itself.
- */
+/** Classification of a taxon, flattened into a list from kingdom down to the taxon. */
 export const fetchWormsClassification = async (aphiaId, signal) => {
   const res = await fetch(`${REST_BASE}/AphiaClassificationByAphiaID/${aphiaId}`, {
     headers: { Accept: 'application/json' },

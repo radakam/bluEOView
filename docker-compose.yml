@@ -1,28 +1,26 @@
 services:
-  # Backend Service
   backend:
     build:
-      context: ./backend # Path to the directory containing the backend Dockerfile
+      context: ./backend
       dockerfile: Dockerfile
     container_name: bluEOView_backend
     ports:
-      - "5000:5000" # Map host port 5000 to container port 5000
+      - "5000:5000"
     environment:
       - API_PORT=5000
+      # Optional overrides; defaults live in backend/config.py.
       # - DATA_URL= https://data.up.ethz.ch/shared/Blueoview_data
-      # Storage location
       # - STORAGE_DIR=/var/cephaloview_data/
     working_dir: /app
     volumes:
       - ./backend/data/:/var/cephaloview_data/
 
-  # Frontend Service
   frontend:
     build:
-      context: ./frontend # Path to the directory containing the frontend Dockerfile
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: bluEOView_frontend
     ports:
-      - "8080:80" # Map host port 8080 to container Nginx port 80
+      - "8080:80"
     depends_on:
-      - backend # Ensures backend starts before the frontend (good practice)
+      - backend

@@ -157,19 +157,12 @@ const SourceControl = ({ sources, value, onSelect }) => {
   );
 };
 
-/**
- * Whether a variable is a WoRMS taxon. Only a whole positive AphiaID counts: diversity
- * datasets fill `target_id` with labels such as 'Hill 0.25 ( ind m-3 )'.
- */
+/** True for a positive integer AphiaID; diversity datasets put labels in `target_id`. */
 const isWormsTaxon = (option) => /^[1-9]\d*$/.test(String(option?.target_id ?? '').trim());
 
 /**
- * Opens the WoRMS record of the selected taxon. It is tooltipped because it
- * looks like the row's other info button but leads somewhere else.
- *
- * Sitting inside the Select's closed value, it acts on mousedown: a click would
- * be swallowed by the dropdown, and taking focus would re-layout the menu.
- * Suppressing that focus leaves it pointer-only, hence tabIndex -1.
+ * Opens the WoRMS record of the selected taxon. Acts on mousedown without taking
+ * focus, since it sits inside the Select, which would otherwise swallow the click.
  */
 const WormsInfoButton = ({ onOpen }) => (
   <Tooltip title="WoRMS record" placement="top" arrow>

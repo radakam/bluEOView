@@ -82,9 +82,8 @@ const buildPoints = ({ lats, lons, mean, sd, obs, obsMax, obsType, hasObs, scale
 };
 
 /**
- * Keeps the cameras of several globes in step. The globe the user last dragged or
- * scrolled leads; every camera move it makes (damping included) is copied to the rest.
- * Returns a `register(globe)` function whose result unregisters that globe.
+ * Keeps globe cameras in step, following the globe last interacted with.
+ * Returns `register(globe)`, which returns an unregister function.
  */
 const useSyncedGlobes = () => {
   const globesRef = useRef(new Set());

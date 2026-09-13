@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 /**
  * Runs an async task whenever `deps` change and tracks its loading/error state.
- *
- * The task receives an AbortSignal; results of a run that has been superseded
- * (or unmounted) are discarded, so out-of-order responses cannot overwrite
- * newer data.
+ * Results of superseded or unmounted runs are discarded.
  *
  * @param task        (signal) => Promise<data>
  * @param deps        values that should trigger a re-run

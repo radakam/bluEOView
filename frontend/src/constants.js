@@ -1,5 +1,4 @@
-// Values that describe the data and its presentation. Pure data only: copy lives
-// in content.js, reusable styles in styles/, and helpers in utils.js.
+// Data and presentation constants. Copy lives in content.js, helpers in utils.js.
 
 /** Time index the backend uses for the annual mean, past the twelve months. */
 export const ANNUAL_MONTH = 13;

@@ -51,11 +51,7 @@ const PLOT_CONFIG = {
 const UNCERTAIN_HOVER = { bg: 'rgba(160,0,0,0.9)', border: '#ff2222' };
 const NORMAL_HOVER = { bg: 'rgba(30,30,30,0.85)', border: 'rgba(255,255,255,0.2)' };
 
-/**
- * Diagonal hatching over the cells whose standard deviation is above threshold.
- * Plotly cannot pattern-fill a heatmap, so the mask is drawn on a canvas that is
- * inset to the plot area (never overlapping the colour bar).
- */
+/** Hatching over high-SD cells, drawn on a canvas because Plotly heatmaps lack pattern fills. */
 const HatchOverlay = ({ uncertaintyMask, lats, lons, zoomedArea }) => {
   const canvasRef = useRef(null);
 
