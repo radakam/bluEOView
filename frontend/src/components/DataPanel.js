@@ -95,7 +95,7 @@ const DataPanel = ({
           display: 'flex',
           flexDirection: { xs: 'column', lg: 'row' },
           gap: 1,
-          mb: 2,
+          mb: 1,
           width: '100%',
           alignItems: 'stretch',
         }}
