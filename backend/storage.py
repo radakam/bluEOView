@@ -29,10 +29,14 @@ _downloaded_files = {}
 
 def dataset_label(filename):
     """Turn 'L3_plankton_species_diversity_from_occurrence_20260518.nc' into
-    'Diversity from occurrence'."""
+    'Diversity projection based on occurrence'."""
     name = re.sub(r"\.nc$", "", filename)
     name = re.sub(r"_\d{8}$", "", name)  # trailing date stamp
     name = re.sub(r"^L\d+_plankton_species_", "", name)  # generic prefix
+    match = re.fullmatch(r"(diversity|distribution)_from_(.+)", name)
+    if match:
+        kind = "Species" if match.group(1) == "distribution" else "Diversity"
+        return f"{kind} projection based on {match.group(2).replace('_', ' ')}"
     return name.capitalize().replace("_", " ")
 
 
@@ -41,7 +45,7 @@ def list_datasets():
     return [
         {"label": dataset_label(filename), "value": f"{DATA_URL.rstrip('/')}/{filename}"}
         for filename in sorted(os.listdir(CACHE_DIR))
-        if filename.endswith(".nc")
+        if filename.endswith(".nc") and not SHA1_FILENAME.match(filename)
     ]
 
 
