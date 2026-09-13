@@ -206,7 +206,11 @@ def _valid_target_indices(ds):
 
 
 def _read_worms_ids(ds):
-    """WoRMS AphiaIDs from `target_id`, as ints where possible."""
+    """WoRMS AphiaIDs from `target_id`, with None for targets that are not taxa.
+
+    Diversity files reuse `target_id` for labels such as 'Hill 0.25 ( ind m-3 )',
+    so only whole positive numbers are taken as AphiaIDs.
+    """
     values = None
     if "target_id" in ds:
         values = ds["target_id"].values.tolist()
@@ -215,10 +219,18 @@ def _read_worms_ids(ds):
 
     if values is None:
         return None
+    return [_as_aphia_id(v) for v in values]
+
+
+def _as_aphia_id(value):
+    """`value` as an int AphiaID, or None when it is not one."""
     try:
-        return [int(v) for v in values]
+        number = float(decode_str(value))
     except (TypeError, ValueError):
-        return [str(v) for v in values]
+        return None
+    if not np.isfinite(number) or number <= 0 or not number.is_integer():
+        return None
+    return int(number)
 
 
 def _url_lock(file_url):

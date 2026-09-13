@@ -71,6 +71,8 @@ const DataPanel = ({
     titleLoading: loading,
     showStd,
     showObs,
+    onHideStd: () => setShowStd(false),
+    onHideObs: () => setShowObs(false),
     varInfo,
     loading,
     error,
@@ -79,6 +81,9 @@ const DataPanel = ({
   return (
     <Box
       sx={{
+        flex: 1,
+        width: '100%',
+        boxSizing: 'border-box',
         p: 2,
         backgroundColor: 'rgba(0, 0, 0, 0.25)',
         borderRadius: 1,

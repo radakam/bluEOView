@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import Globe from 'react-globe.gl';
+import CloseButton from './common/CloseButton';
 import ColorLegend from './common/ColorLegend';
 import LoadingOverlay from './common/LoadingOverlay';
 import PanelTitle from './common/PanelTitle';
@@ -24,7 +25,6 @@ import {
 import {
   aspectBoxStyle,
   errorTextStyle,
-  GLOBE_SURFACE_BG,
   panelRowStyle,
   panelStyle,
   subtitleStyle,
@@ -133,6 +133,7 @@ const GlobePanel = ({
   pointColor,
   legend,
   unit,
+  onHide,
 }) => {
   const [containerRef, { width, height }] = useElementSize();
   const globeRef = useRef(null);
@@ -142,7 +143,7 @@ const GlobePanel = ({
   return (
     <div style={{ ...panelStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={aspectBoxStyle}>
-        <div ref={containerRef} style={surfaceStyle(GLOBE_SURFACE_BG, loading)}>
+        <div ref={containerRef} style={surfaceStyle(loading)}>
           <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
           <div style={subtitleStyle}>{subtitle}</div>
           <Globe
@@ -160,6 +161,7 @@ const GlobePanel = ({
           />
           <ColorLegend legend={legend} unit={unit} />
           <LoadingOverlay visible={loading} />
+          {onHide && <CloseButton onClick={onHide} />}
         </div>
       </div>
     </div>
@@ -172,6 +174,8 @@ const GlobeDisplay = ({
   baseTitle,
   showStd,
   showObs,
+  onHideStd,
+  onHideObs,
   varInfo = null,
   loading = false,
   titleLoading = false,
@@ -252,6 +256,7 @@ const GlobeDisplay = ({
             points={points.std}
             pointColor={pointOwnColor}
             legend={sdLegend}
+            onHide={onHideStd}
           />
         )}
 
@@ -264,6 +269,7 @@ const GlobeDisplay = ({
             pointColor={pointOwnColor}
             legend={obsLegend}
             unit={varInfo?.obs?.unit}
+            onHide={onHideObs}
           />
         )}
       </div>

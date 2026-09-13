@@ -1,8 +1,10 @@
 // Inline styles for the map and globe panels. These render plain DOM (Plotly and
 // react-globe.gl own their containers), so they use `style` rather than MUI `sx`.
 
-export const MAP_SURFACE_BG = 'rgba(18,18,18,0.8)';
-export const GLOBE_SURFACE_BG = '#0a0a0a';
+/** Matches `glassPanelSx`, so figures sit on the same card as the Control and Quality panels. */
+const SURFACE_BG = 'rgba(0,0,0,0.25)';
+const SURFACE_BORDER = '1px solid rgba(255,255,255,0.15)';
+const SURFACE_RADIUS = 4;
 
 /** Plot margins, also used to position the uncertainty hatching. */
 export const PLOT_MARGIN = { l: 20, r: 70, t: 70, b: 20 };
@@ -10,14 +12,16 @@ export const PLOT_MARGIN = { l: 20, r: 70, t: 70, b: 20 };
 /** 16:9 placeholder that the absolutely positioned surface fills. */
 export const aspectBoxStyle = { position: 'relative', width: '100%', paddingTop: '56.25%' };
 
-export const surfaceStyle = (background, loading) => ({
+export const surfaceStyle = (loading) => ({
   position: 'absolute',
   top: 0,
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: background,
-  borderRadius: 6,
+  backgroundColor: SURFACE_BG,
+  backdropFilter: 'blur(8px)',
+  border: SURFACE_BORDER,
+  borderRadius: SURFACE_RADIUS,
   overflow: 'hidden',
   cursor: loading ? 'wait' : 'default',
 });
@@ -55,6 +59,27 @@ export const subtitleStyle = {
   zIndex: 5,
 };
 
+export const closeButtonStyle = (hovered) => ({
+  position: 'absolute',
+  top: 8,
+  right: 8,
+  width: 26,
+  height: 26,
+  padding: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 14,
+  lineHeight: 1,
+  color: 'white',
+  backgroundColor: hovered ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.4)',
+  border: '1px solid rgba(255,255,255,0.25)',
+  borderRadius: '50%',
+  cursor: 'pointer',
+  transition: 'background-color 0.15s ease',
+  zIndex: 15,
+});
+
 export const overlayStyle = (visible) => ({
   position: 'absolute',
   top: 0,
@@ -68,7 +93,7 @@ export const overlayStyle = (visible) => ({
   opacity: visible ? 1 : 0,
   pointerEvents: visible ? 'all' : 'none',
   transition: 'opacity 0.2s ease',
-  borderRadius: 6,
+  borderRadius: SURFACE_RADIUS,
   zIndex: 20,
 });
 

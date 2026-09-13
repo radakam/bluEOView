@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import Plot from 'react-plotly.js';
+import CloseButton from './common/CloseButton';
 import LoadingOverlay from './common/LoadingOverlay';
 import PanelTitle from './common/PanelTitle';
 import ZoomHint from './common/ZoomHint';
@@ -24,7 +25,6 @@ import {
   colorbarBase,
   colorbarUnitTitle,
   errorTextStyle,
-  MAP_SURFACE_BG,
   panelRowStyle,
   panelStyle,
   PLOT_MARGIN,
@@ -152,11 +152,12 @@ const MapPanel = ({
   onRelayout,
   onResetZoom,
   isZoomed,
+  onHide,
   children,
 }) => (
   <div style={panelStyle}>
     <div style={aspectBoxStyle}>
-      <div style={surfaceStyle(MAP_SURFACE_BG, loading)}>
+      <div style={surfaceStyle(loading)}>
         <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
         <div style={subtitleStyle}>{subtitle}</div>
         <Plot
@@ -171,6 +172,7 @@ const MapPanel = ({
         {children}
         <LoadingOverlay visible={loading} />
         <ZoomHint visible={isZoomed && !loading} />
+        {onHide && <CloseButton onClick={onHide} />}
       </div>
     </div>
   </div>
@@ -185,6 +187,8 @@ const MapDisplay = ({
   titleLoading = false,
   showStd,
   showObs,
+  onHideStd,
+  onHideObs,
   varInfo = null,
   loading = false,
   error = null,
@@ -423,6 +427,7 @@ const MapDisplay = ({
             title={`${fullTitle} Standard Deviation`}
             subtitle={variableSubtitle(varInfo, 'sd')}
             traces={stdTraces}
+            onHide={onHideStd}
           />
         )}
 
@@ -432,6 +437,7 @@ const MapDisplay = ({
             title={observationTitle(baseTitle, obsType)}
             subtitle={variableSubtitle(varInfo, 'obs')}
             traces={obsTraces}
+            onHide={onHideObs}
           />
         )}
       </div>

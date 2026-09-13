@@ -158,6 +158,12 @@ const SourceControl = ({ sources, value, onSelect }) => {
 };
 
 /**
+ * Whether a variable is a WoRMS taxon. Only a whole positive AphiaID counts: diversity
+ * datasets fill `target_id` with labels such as 'Hill 0.25 ( ind m-3 )'.
+ */
+const isWormsTaxon = (option) => /^[1-9]\d*$/.test(String(option?.target_id ?? '').trim());
+
+/**
  * Opens the WoRMS record of the selected taxon. It is tooltipped because it
  * looks like the row's other info button but leads somewhere else.
  *
@@ -219,7 +225,7 @@ const VariableControl = ({ feature, featureOptions, onFeatureChange, loading, on
           return (
             <span>
               {selected.label}
-              {selected.target_id != null && <WormsInfoButton onOpen={onShowWorms} />}
+              {isWormsTaxon(selected) && <WormsInfoButton onOpen={onShowWorms} />}
             </span>
           );
         }}
@@ -251,7 +257,7 @@ const VariableControl = ({ feature, featureOptions, onFeatureChange, loading, on
         {matches.map((opt) => (
           <MenuItem key={opt.value} value={opt.value}>
             {opt.label}
-            {opt.target_id != null && (
+            {isWormsTaxon(opt) && (
               <Typography
                 component="span"
                 sx={{ ...monoTextSx, ml: 1, color: 'rgba(255,255,255,0.4)', fontSize: '0.78em' }}
