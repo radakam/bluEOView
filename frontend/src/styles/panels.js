@@ -12,10 +12,12 @@ export const glassPanelSx = {
   overflow: 'hidden',
 };
 
-/** Clickable header strip of a collapsible panel. */
+/** Clickable header strip of a collapsible panel; min height keeps dividers level across panels. */
 export const panelHeaderSx = (open) => ({
   display: 'flex',
   alignItems: 'center',
+  boxSizing: 'border-box',
+  minHeight: 57,
   px: 2,
   py: 1,
   cursor: 'pointer',
