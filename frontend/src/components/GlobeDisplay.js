@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import Globe from 'react-globe.gl';
 import ColorLegend from './common/ColorLegend';
 import LoadingOverlay from './common/LoadingOverlay';
@@ -81,9 +81,63 @@ const buildPoints = ({ lats, lons, mean, sd, obs, obsMax, obsType, hasObs, scale
   return points;
 };
 
+/**
+ * Keeps the cameras of several globes in step. The globe the user last dragged or
+ * scrolled leads; every camera move it makes (damping included) is copied to the rest.
+ * Returns a `register(globe)` function whose result unregisters that globe.
+ */
+const useSyncedGlobes = () => {
+  const globesRef = useRef(new Set());
+  const leaderRef = useRef(null);
+
+  return useCallback((globe) => {
+    const globes = globesRef.current;
+    const controls = globe.controls();
+
+    // A globe that appears later starts from the view the others already share.
+    const [current] = globes;
+    if (current) globe.camera().position.copy(current.camera().position);
+    globes.add(globe);
+
+    const onStart = () => {
+      leaderRef.current = globe;
+    };
+    const onChange = () => {
+      if (leaderRef.current !== globe) return;
+      const { position } = globe.camera();
+      globes.forEach((other) => {
+        if (other !== globe) other.camera().position.copy(position);
+      });
+    };
+
+    controls.addEventListener('start', onStart);
+    controls.addEventListener('change', onChange);
+
+    return () => {
+      controls.removeEventListener('start', onStart);
+      controls.removeEventListener('change', onChange);
+      globes.delete(globe);
+      if (leaderRef.current === globe) leaderRef.current = null;
+    };
+  }, []);
+};
+
 /** One titled, 16:9 globe figure that sizes its canvas to its container. */
-const GlobePanel = ({ title, subtitle, titleLoading, loading, points, pointColor, legend, unit }) => {
+const GlobePanel = ({
+  registerGlobe,
+  title,
+  subtitle,
+  titleLoading,
+  loading,
+  points,
+  pointColor,
+  legend,
+  unit,
+}) => {
   const [containerRef, { width, height }] = useElementSize();
+  const globeRef = useRef(null);
+
+  useEffect(() => registerGlobe(globeRef.current), [registerGlobe]);
 
   return (
     <div style={{ ...panelStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -92,6 +146,7 @@ const GlobePanel = ({ title, subtitle, titleLoading, loading, points, pointColor
           <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
           <div style={subtitleStyle}>{subtitle}</div>
           <Globe
+            ref={globeRef}
             width={width}
             height={height}
             globeImageUrl={EARTH_TEXTURE}
@@ -123,6 +178,7 @@ const GlobeDisplay = ({
   error = null,
 }) => {
   const isNarrow = useIsNarrow();
+  const registerGlobe = useSyncedGlobes();
 
   const {
     lats = [],
@@ -168,7 +224,7 @@ const GlobeDisplay = ({
     [obsType, obsMax, scale]
   );
 
-  const panelProps = { titleLoading, loading };
+  const panelProps = { registerGlobe, titleLoading, loading };
   const pointOwnColor = (d) => d.color;
 
   return (
