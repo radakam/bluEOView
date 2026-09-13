@@ -21,6 +21,7 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -157,24 +158,29 @@ const SourceControl = ({ sources, value, onSelect }) => {
 };
 
 /**
- * Opens the WoRMS record of the selected taxon. It sits inside the closed state
- * of a Select, so it reacts to mousedown: a click would be swallowed by the
- * dropdown, and focus changes would re-layout the menu.
+ * Opens the WoRMS record of the selected taxon. It is tooltipped because it
+ * looks like the row's other info button but leads somewhere else.
+ *
+ * Sitting inside the Select's closed value, it acts on mousedown: a click would
+ * be swallowed by the dropdown, and taking focus would re-layout the menu.
+ * Suppressing that focus leaves it pointer-only, hence tabIndex -1.
  */
 const WormsInfoButton = ({ onOpen }) => (
-  <Typography
-    component="a"
-    role="button"
-    aria-label="Show WoRMS record"
-    onMouseDown={(e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      onOpen({ x: e.clientX, y: e.clientY });
-    }}
-    sx={{ color: '#fff', ml: 1.5, cursor: 'pointer', fontSize: '0.9em', userSelect: 'none' }}
-  >
-    <strong>&#9432;</strong>
-  </Typography>
+  <Tooltip title="WoRMS record" placement="top" arrow>
+    <IconButton
+      size="small"
+      tabIndex={-1}
+      aria-label="Show WoRMS record"
+      sx={{ color: '#fff', ml: 0.5, p: 0.25 }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onOpen();
+      }}
+    >
+      <InfoOutlinedIcon fontSize="small" />
+    </IconButton>
+  </Tooltip>
 );
 
 /** Searchable variable picker. */
@@ -353,8 +359,7 @@ const ControlPanel = ({
   onToggleObs,
   hasObs = false,
 }) => {
-  // Position of the click that opened the WoRMS modal; null while it is closed.
-  const [wormsAnchor, setWormsAnchor] = useState(null);
+  const [wormsOpen, setWormsOpen] = useState(false);
 
   const selectedFeature = featureOptions.find((f) => f.value === feature);
 
@@ -420,7 +425,7 @@ const ControlPanel = ({
               featureOptions={featureOptions}
               onFeatureChange={onFeatureChange}
               loading={featuresLoading}
-              onShowWorms={setWormsAnchor}
+              onShowWorms={() => setWormsOpen(true)}
             />
           </Box>
 
@@ -442,9 +447,8 @@ const ControlPanel = ({
       </CollapsiblePanel>
 
       <WormsModal
-        open={Boolean(wormsAnchor)}
-        clickPosition={wormsAnchor}
-        onClose={() => setWormsAnchor(null)}
+        open={wormsOpen}
+        onClose={() => setWormsOpen(false)}
         wormsId={selectedFeature?.target_id}
       />
     </>

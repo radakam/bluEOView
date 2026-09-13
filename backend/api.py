@@ -16,6 +16,7 @@ from datasets import (
 )
 from quality import extract_quality_control
 from storage import list_datasets
+from worms import species_image
 
 log = logging.getLogger(__name__)
 
@@ -191,3 +192,23 @@ def diversity_qc():
         raise ApiError(f"Failed to extract QC data: {e}", status=500) from e
 
     return jsonify(table or {"available": False})
+
+
+@api.route("/species-image", methods=["GET"])
+def species_image_route():
+    """A photograph of one taxon from the WoRMS photogallery.
+
+    The picture only illustrates data the frontend already has, so both an empty
+    gallery and an unreachable registry answer "no image" rather than fail.
+    """
+    aphia_id = request.args.get("aphiaId", type=int)
+    if not aphia_id or aphia_id <= 0:
+        raise ApiError("Missing or invalid parameter: aphiaId")
+
+    try:
+        image = species_image(aphia_id)
+    except Exception as e:
+        log.warning("WoRMS image lookup failed for AphiaID %s: %s", aphia_id, e)
+        return jsonify({"available": False})
+
+    return jsonify(image or {"available": False})

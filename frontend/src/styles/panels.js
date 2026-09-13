@@ -94,6 +94,14 @@ export const frostedDialogSx = {
   },
 };
 
+/** Inset tray on a frosted surface: the photo frame and the rank breadcrumb. */
+export const insetTraySx = {
+  backgroundColor: 'action.hover',
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 1,
+};
+
 /** Logo plate in the header and the footer. */
 export const logoTileSx = (width, height) => ({
   display: 'flex',

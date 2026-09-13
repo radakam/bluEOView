@@ -26,3 +26,12 @@ export const fetchMap = ({ file, feature, timeIndex }, signal) =>
 /** Quality-control table for one variable (dataset-wide when feature is empty). */
 export const fetchQualityControl = ({ file, feature }, signal) =>
   request('/api/diversity-qc', feature ? { file, feature } : { file }, signal);
+
+/**
+ * A photograph of one taxon from the WoRMS photogallery, as
+ * `{ available, url, title, author, description, licenseName, licenseUrl, pageUrl }`.
+ * Routed through the backend because WoRMS serves its gallery as HTML pages,
+ * which the browser may not read cross-origin.
+ */
+export const fetchSpeciesImage = (aphiaId, signal) =>
+  request('/api/species-image', { aphiaId }, signal);

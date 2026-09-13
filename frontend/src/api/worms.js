@@ -1,4 +1,8 @@
 // World Register of Marine Species (WoRMS), queried directly from the browser.
+//
+// Only the REST API sends CORS headers, and it covers taxonomy alone.
+// Photographs live on WoRMS' HTML pages and are read server-side instead —
+// see `fetchSpeciesImage` in `api/client.js`.
 
 const REST_BASE = 'https://www.marinespecies.org/rest';
 

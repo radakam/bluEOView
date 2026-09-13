@@ -1,17 +1,21 @@
 import React from 'react';
 import {
   Box,
+  Button,
   CircularProgress,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
+  Divider,
+  Link,
   Typography,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import LaunchIcon from '@mui/icons-material/Launch';
 import { fetchWormsClassification, wormsTaxonUrl } from '../api/worms';
 import { useAsyncData } from '../hooks/useAsyncData';
+import SpeciesPhoto from './SpeciesPhoto';
+import { frostedDialogSx, insetTraySx } from '../styles/panels';
 
 const POPUP_SIZE = { width: 1000, height: 800 };
 const ITALIC_RANKS = ['Genus', 'Species'];
@@ -46,7 +50,7 @@ const RankStep = ({ rank, scientificname }) => (
         fontSize: '0.85rem',
         fontWeight: rank === 'Species' ? 'bold' : 'normal',
         fontStyle: ITALIC_RANKS.includes(rank) ? 'italic' : 'normal',
-        color: rank === 'Species' ? '#1976d2' : 'text.primary',
+        color: rank === 'Species' ? 'primary.main' : 'text.primary',
         lineHeight: 1.2,
       }}
     >
@@ -55,8 +59,8 @@ const RankStep = ({ rank, scientificname }) => (
   </Box>
 );
 
-/** Taxonomic classification of one taxon, anchored at the click that opened it. */
-const WormsModal = ({ open, onClose, wormsId, clickPosition }) => {
+/** Photograph and taxonomic classification of one taxon. */
+const WormsModal = ({ open, onClose, wormsId }) => {
   const { data: classification, loading, error } = useAsyncData(
     (signal) => fetchWormsClassification(wormsId, signal),
     [wormsId],
@@ -66,72 +70,40 @@ const WormsModal = ({ open, onClose, wormsId, clickPosition }) => {
   if (!wormsId) return null;
 
   const taxonUrl = wormsTaxonUrl(wormsId);
+  // The chain ends at the taxon itself, which titles the panel once it loads.
+  const taxon = classification[classification.length - 1];
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          position: 'absolute',
-          top: clickPosition ? `${clickPosition.y}px` : '50%',
-          left: clickPosition ? `${clickPosition.x}px` : '50%',
-          transform: clickPosition ? 'none' : 'translate(-50%, -50%)',
-          margin: 0,
-          maxHeight: '40vh',
-          backgroundColor: '#ffffff',
-          color: 'text.primary',
-          borderRadius: 2,
-          boxShadow: 3,
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-      >
-        <Box>
-          <Typography
-            variant="subtitle1"
-            component="div"
-            sx={{ fontWeight: 'bold', lineHeight: 1.2, color: 'text.primary' }}
-          >
-            WoRMS ID: {wormsId}
-          </Typography>
-          <Typography
-            component="a"
-            href={taxonUrl}
-            onClick={(e) => openTaxonPopup(e, taxonUrl, wormsId)}
-            sx={{
-              fontSize: '0.75rem',
-              color: '#1976d2',
-              textDecoration: 'none',
-              cursor: 'pointer',
-              '&:hover': { textDecoration: 'underline' },
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.5,
-              mt: 0.5,
-            }}
-          >
-            WoRMS web entry <LaunchIcon sx={{ fontSize: '0.75rem' }} />
-          </Typography>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth sx={frostedDialogSx}>
+      <DialogTitle>
+        <Box
+          component="span"
+          sx={{ fontStyle: ITALIC_RANKS.includes(taxon?.rank) ? 'italic' : 'normal' }}
+        >
+          {taxon?.scientificname || 'WoRMS record'}
         </Box>
 
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{ color: 'text.secondary', '&:hover': { color: '#d32f2f' }, p: 0.5 }}
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
+          AphiaID {wormsId} &middot;{' '}
+          <Link
+            href={taxonUrl}
+            onClick={(e) => openTaxonPopup(e, taxonUrl, wormsId)}
+            underline="hover"
+            sx={{ cursor: 'pointer' }}
+          >
+            WoRMS web entry <LaunchIcon sx={{ fontSize: '0.85em', verticalAlign: '-0.1em' }} />
+          </Link>
+        </Typography>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 2, borderColor: 'rgba(0, 0, 0, 0.12)', overflowY: 'auto' }}>
+      <DialogContent dividers>
+        <SpeciesPhoto aphiaId={wormsId} enabled={open} />
+
+        <Divider sx={{ my: 2 }} />
+
         {loading && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 2, gap: 2 }}>
-            <CircularProgress size={24} sx={{ color: '#1976d2' }} />
+            <CircularProgress size={24} />
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               Querying Marine Registry...
             </Typography>
@@ -139,7 +111,7 @@ const WormsModal = ({ open, onClose, wormsId, clickPosition }) => {
         )}
 
         {!loading && error && (
-          <Typography variant="body2" sx={{ color: '#d32f2f', textAlign: 'center', py: 1 }}>
+          <Typography variant="body2" sx={{ color: 'error.main', textAlign: 'center', py: 1 }}>
             {error}
           </Typography>
         )}
@@ -156,14 +128,13 @@ const WormsModal = ({ open, onClose, wormsId, clickPosition }) => {
         {!loading && !error && classification.length > 0 && (
           <Box
             sx={{
+              ...insetTraySx,
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
               rowGap: 1,
               columnGap: 0.75,
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
               p: 1.5,
-              borderRadius: 1,
             }}
           >
             {classification.map((step, index) => (
@@ -172,7 +143,7 @@ const WormsModal = ({ open, onClose, wormsId, clickPosition }) => {
                 {index < classification.length - 1 && (
                   <Typography
                     sx={{
-                      color: 'rgba(0, 0, 0, 0.26)',
+                      color: 'text.disabled',
                       fontSize: '0.85rem',
                       px: 0.25,
                       userSelect: 'none',
@@ -186,6 +157,10 @@ const WormsModal = ({ open, onClose, wormsId, clickPosition }) => {
           </Box>
         )}
       </DialogContent>
+
+      <DialogActions>
+        <Button onClick={onClose}>Close</Button>
+      </DialogActions>
     </Dialog>
   );
 };
