@@ -10,6 +10,45 @@ body {
     overflow-y: scroll;
 }
 
+/* Scrollbars: thin and translucent on the dark surfaces, dark on the light
+   dialogs. Firefox reads the standard properties; Chrome and Safari read the
+   pseudo-elements, which are kept apart so the two never fight. */
+:root {
+    --scrollbar-thumb: rgba(255, 255, 255, 0.3);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
+}
+
+.MuiDialog-paper {
+    --scrollbar-thumb: rgba(0, 0, 0, 0.3);
+    --scrollbar-thumb-hover: rgba(0, 0, 0, 0.5);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+}
+
 #root {
     background: rgba(0, 0, 0, 0);
     min-height: 100vh;

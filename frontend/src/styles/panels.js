@@ -51,8 +51,6 @@ export const darkMenuProps = {
         '&:hover': { backgroundColor: 'rgba(255,255,255,0.15)' },
         '&.Mui-selected': { backgroundColor: 'rgba(255,255,255,0.2)' },
       },
-      scrollbarWidth: 'thin',
-      scrollbarColor: 'rgba(255,255,255,0.3) transparent',
     },
   },
 };

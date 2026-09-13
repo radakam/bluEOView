@@ -164,10 +164,24 @@ export const colorbarBase = {
   outlinecolor: 'rgba(255,255,255,0.15)',
 };
 
+/**
+ * Plotly only pushes a right-side colour bar title clear of the tick labels it
+ * overlaps, so a short unit such as '1' can sit in the gap between two labels.
+ * Invisible padding makes the title span the labels whatever the bar's height;
+ * it is wrapped in a span because Plotly trims the title text.
+ */
+const UNIT_TITLE_PADDING = `<span>${' '.repeat(60)}</span>`;
+
 /** Plotly colour bar title, only rendered when the variable declares a unit. */
 export const colorbarUnitTitle = (unit) =>
   unit
-    ? { title: { text: unit, side: 'right', font: { color: 'rgba(255,255,255,0.7)', size: 10 } } }
+    ? {
+        title: {
+          text: `${UNIT_TITLE_PADDING}${unit}${UNIT_TITLE_PADDING}`,
+          side: 'right',
+          font: { color: 'rgba(255,255,255,0.7)', size: 10 },
+        },
+      }
     : null;
 
 export const errorTextStyle = { color: '#ff6b6b', textAlign: 'center', padding: '10px' };
