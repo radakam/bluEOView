@@ -1,23 +1,15 @@
-import React, { useState } from 'react';
-import { closeButtonStyle } from '../../styles/display';
+import React from 'react';
+import { IconButton, Tooltip } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { closeButtonSx } from '../../styles/panels';
 
-/** Small "✕" in a panel's top-right corner that hides the panel. */
-const CloseButton = ({ onClick, label = 'Hide' }) => {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      style={closeButtonStyle(hovered)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      ✕
-    </button>
-  );
-};
+/** Small close icon in a panel's top-right corner that hides the panel. */
+const CloseButton = ({ onClick, label = 'Hide' }) => (
+  <Tooltip title={label} placement="left" arrow>
+    <IconButton size="small" onClick={onClick} aria-label={label} sx={closeButtonSx}>
+      <CloseIcon sx={{ fontSize: 16 }} />
+    </IconButton>
+  </Tooltip>
+);
 
 export default CloseButton;

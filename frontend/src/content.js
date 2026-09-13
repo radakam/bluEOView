@@ -21,6 +21,32 @@ export const noQualityText =
   'pre-filtered. Only those that passed the initial quality checks were used for ' +
   'the projection.';
 
+/** What each quality-control criterion in the `qc` dimension checks. */
+export const qcMetricDescriptions = {
+  PRE_VIP:
+    'Pre-modelling variable importance: the environmental predictors selected before ' +
+    'fitting carry enough information about the target.',
+  FIT:
+    'Model fit: predictive performance on cross-validation (e.g. R² or AUC) is above ' +
+    'the acceptance threshold.',
+  CUM_VIP:
+    'Cumulative variable importance: the most important predictors together explain a ' +
+    'sufficient share of the model, so it relies on meaningful drivers.',
+  DEV:
+    'Deviation: the spread between bootstrap projections is small enough for the ' +
+    'predicted patterns to be robust.',
+};
+
+/** Full names of the modelling algorithms in the `algorithm` dimension. */
+export const algorithmDescriptions = {
+  GLM: 'Generalised Linear Model: a regression linking the target to linear combinations of the predictors.',
+  GAM: 'Generalised Additive Model: a regression using smooth, non-linear responses to each predictor.',
+  BRT: 'Boosted Regression Trees: an ensemble of small decision trees, each fitted to the errors of the previous ones.',
+  RF: 'Random Forest: an ensemble of decision trees trained on random subsets of the data and predictors.',
+  SVM: 'Support Vector Machine: a kernel-based method that fits a flexible boundary or regression surface.',
+  MLP: 'Multi-Layer Perceptron: a feed-forward neural network capturing complex non-linear relationships.',
+};
+
 export const noDescriptionText = 'No description available.';
 
 export const softwareCredit = 'Backend & Frontend: Rada Kamysheva';

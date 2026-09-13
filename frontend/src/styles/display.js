@@ -59,27 +59,6 @@ export const subtitleStyle = {
   zIndex: 5,
 };
 
-export const closeButtonStyle = (hovered) => ({
-  position: 'absolute',
-  top: 8,
-  right: 8,
-  width: 26,
-  height: 26,
-  padding: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 14,
-  lineHeight: 1,
-  color: 'white',
-  backgroundColor: hovered ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.4)',
-  border: '1px solid rgba(255,255,255,0.25)',
-  borderRadius: '50%',
-  cursor: 'pointer',
-  transition: 'background-color 0.15s ease',
-  zIndex: 15,
-});
-
 export const overlayStyle = (visible) => ({
   position: 'absolute',
   top: 0,

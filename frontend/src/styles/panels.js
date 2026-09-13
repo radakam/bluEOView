@@ -84,6 +84,25 @@ export const layerToggleSx = (active) => ({
   },
 });
 
+/** Corner button that hides the SD / Obs panel; styled like an inactive `layerToggleSx`. */
+export const closeButtonSx = {
+  position: 'absolute',
+  top: 8,
+  right: 8,
+  zIndex: 15,
+  width: 28,
+  height: 28,
+  color: '#fff',
+  border: '1px solid rgba(255,255,255,0.25)',
+  borderRadius: 1,
+  backgroundColor: 'rgba(30,30,30,0.75)',
+  backdropFilter: 'blur(4px)',
+  '&:hover': {
+    borderColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(50,50,50,0.85)',
+  },
+};
+
 /** Light, frosted dialog surface used by the modals. */
 export const frostedDialogSx = {
   '& .MuiPaper-root': {

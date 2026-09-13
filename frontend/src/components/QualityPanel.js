@@ -3,7 +3,13 @@ import { Box, CircularProgress, IconButton, Tooltip, Typography } from '@mui/mat
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CollapsiblePanel from './common/CollapsiblePanel';
 import { useQualityControl } from '../hooks/useQualityControl';
-import { noDescriptionText, noQualityText } from '../content';
+import {
+  algorithmDescriptions,
+  noDescriptionText,
+  noQualityText,
+  qcMetricDescriptions,
+} from '../content';
+import { errorTextSx } from '../styles/panels';
 
 const STATUS_COLORS = { pass: '#00c853', caution: '#ffab00', fail: '#e53935' };
 
@@ -13,41 +19,44 @@ const LEGEND_ITEMS = [
   [STATUS_COLORS.fail, 'Fail'],
 ];
 
-const headerCellSx = (isRecommendation) => ({
-  textAlign: isRecommendation ? 'left' : 'center',
-  px: 1.5,
-  py: 1,
-  color: 'rgba(255,255,255,0.4)',
-  fontWeight: 600,
-  fontSize: '0.7rem',
-  borderBottom: '1px solid rgba(255,255,255,0.1)',
-  whiteSpace: isRecommendation ? 'normal' : 'nowrap',
-  minWidth: isRecommendation ? 180 : 80,
-});
+/** Divider weight of the panel header, so the table reads as part of the same card. */
+const RULE = '1px solid rgba(255,255,255,0.08)';
 
-const bodyCellSx = { px: 1.5, py: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' };
+const cellSx = { px: 1, py: 0.75, borderBottom: RULE, fontSize: '0.85rem', color: '#fff' };
 
-const toRgb = (hex) => {
-  const h = hex.replace('#', '');
-  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
-};
+const headerCellSx = { ...cellSx, fontWeight: 500, whiteSpace: 'nowrap', textAlign: 'center' };
+
+/** Criterion the file leaves uncoloured ("white"), i.e. not evaluated. */
+const UNKNOWN_COLOR = '#555';
+
+const STATUS_RANK = [STATUS_COLORS.pass, STATUS_COLORS.caution, STATUS_COLORS.fail];
 
 /**
- * Worst status among a row of QC colours. The backend sends arbitrary hex
- * colours, so they are classified by hue rather than matched exactly.
+ * The panel's status colour for a QC colour from the file. Files use their own
+ * palette (e.g. #1F867B, #ffc800, #B64A60), so colours are classified by hue
+ * and redrawn in `STATUS_COLORS`, keeping every dot consistent with the legend.
  */
-const worstStatus = (rowColors) => {
-  const rgb = rowColors.map(toRgb);
-  if (rgb.some(([r, g, b]) => r > 180 && g < 120 && b < 120)) return STATUS_COLORS.fail;
-  if (rgb.some(([r, g, b]) => r > 180 && g > 120 && b < 100)) return STATUS_COLORS.caution;
+const statusColor = (color) => {
+  const match = /^#?([0-9a-f]{6})$/i.exec(String(color ?? '').trim());
+  if (!match) return UNKNOWN_COLOR;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(match[1].slice(i, i + 2), 16));
+  if (Math.min(r, g, b) > 200) return UNKNOWN_COLOR;
+  if (r > 150 && g > 150 && b < 100) return STATUS_COLORS.caution;
+  if (r > g && r > b) return STATUS_COLORS.fail;
   return STATUS_COLORS.pass;
 };
 
-const Dot = ({ color }) => (
+/** Worst status among a row of QC colours; unevaluated criteria are ignored. */
+const worstStatus = (rowColors) => {
+  const ranks = rowColors.map((c) => STATUS_RANK.indexOf(statusColor(c))).filter((i) => i >= 0);
+  return ranks.length ? STATUS_RANK[Math.max(...ranks)] : UNKNOWN_COLOR;
+};
+
+const Dot = ({ color, size = 10 }) => (
   <Box
     sx={{
-      width: 10,
-      height: 10,
+      width: size,
+      height: size,
       borderRadius: '50%',
       backgroundColor: color,
       flexShrink: 0,
@@ -57,39 +66,43 @@ const Dot = ({ color }) => (
 );
 
 const Legend = () => (
-  <Box sx={{ display: 'flex', gap: 2, mb: 2, px: 0.5 }}>
+  <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
     {LEGEND_ITEMS.map(([color, label]) => (
       <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color }} />
-        <Typography sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>{label}</Typography>
+        <Dot color={color} size={8} />
+        <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>{label}</Typography>
       </Box>
     ))}
   </Box>
 );
 
+/** Column or row header whose meaning is explained on hover. */
+const HeaderHint = ({ name, description }) =>
+  description ? (
+    <Tooltip title={description} placement="top" arrow>
+      <Box component="span" sx={{ cursor: 'help', borderBottom: '1px dotted' }}>
+        {name}
+      </Box>
+    </Tooltip>
+  ) : (
+    name
+  );
+
 /** One row per algorithm, one dot per QC criterion, plus its recommendation. */
 const QCTable = ({ algorithms, colors, qcNames, recommendations }) => (
   <Box sx={{ overflowX: 'auto' }}>
-    <Box
-      component="table"
-      sx={{
-        width: '100%',
-        borderCollapse: 'collapse',
-        fontSize: '0.78rem',
-        fontFamily: '"IBM Plex Mono", monospace',
-      }}
-    >
+    <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
       <Box component="thead">
         <Box component="tr">
-          <Box component="th" sx={{ ...headerCellSx(false), textAlign: 'left', minWidth: 120 }}>
+          <Box component="th" sx={{ ...headerCellSx, textAlign: 'left' }}>
             Algorithm
           </Box>
           {qcNames.map((name) => (
-            <Box component="th" key={name} sx={headerCellSx(false)}>
-              {name}
+            <Box component="th" key={name} sx={headerCellSx}>
+              <HeaderHint name={name} description={qcMetricDescriptions[name]} />
             </Box>
           ))}
-          <Box component="th" sx={headerCellSx(true)}>
+          <Box component="th" sx={{ ...headerCellSx, textAlign: 'left', pl: 3 }}>
             Recommendation
           </Box>
         </Box>
@@ -104,47 +117,26 @@ const QCTable = ({ algorithms, colors, qcNames, recommendations }) => (
               component="tr"
               key={algorithm}
               sx={{
-                transition: 'background-color 0.15s',
-                '&:hover td, &:hover th': { backgroundColor: 'rgba(255,255,255,0.04)' },
+                '&:last-child td': { borderBottom: 'none' },
+                '&:hover td': { backgroundColor: 'rgba(255,255,255,0.04)' },
               }}
             >
-              <Box
-                component="td"
-                sx={{
-                  ...bodyCellSx,
-                  whiteSpace: 'nowrap',
-                  color: 'rgba(255,255,255,0.9)',
-                  fontWeight: 500,
-                }}
-              >
+              <Box component="td" sx={{ ...cellSx, whiteSpace: 'nowrap' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Dot color={worstStatus(rowColors)} />
-                  {algorithm}
+                  <HeaderHint name={algorithm} description={algorithmDescriptions[algorithm]} />
                 </Box>
               </Box>
 
               {qcNames.map((name, column) => (
-                <Box component="td" key={name} sx={{ ...bodyCellSx, textAlign: 'center' }}>
-                  <Tooltip title={name} placement="top" arrow>
-                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                      <Dot color={rowColors[column] || '#555'} />
-                    </Box>
-                  </Tooltip>
+                <Box component="td" key={name} sx={{ ...cellSx, textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <Dot color={statusColor(rowColors[column])} />
+                  </Box>
                 </Box>
               ))}
 
-              <Box
-                component="td"
-                sx={{
-                  ...bodyCellSx,
-                  color: 'rgba(255,255,255,0.6)',
-                  fontStyle: 'italic',
-                  fontSize: '0.73rem',
-                  lineHeight: 1.4,
-                  fontFamily: 'inherit',
-                  minWidth: 180,
-                }}
-              >
+              <Box component="td" sx={{ ...cellSx, pl: 3, color: 'rgba(255,255,255,0.7)', minWidth: 140 }}>
                 {recommendations[row] || '—'}
               </Box>
             </Box>
@@ -167,30 +159,29 @@ const QualityPanel = ({ netcdfUrl, feature, openInfoModal }) => {
   return (
     <CollapsiblePanel
       title="Quality Control"
-      sx={{ display: 'flex', flexDirection: 'column' }}
       titleAdornment={
         <IconButton
           size="small"
           aria-label="About quality control"
-          sx={{ color: '#fff', ml: 1 }}
+          sx={{ color: '#fff', ml: 0.5, p: 0.25 }}
           onClick={showQualityInfo}
         >
           <InfoOutlinedIcon fontSize="small" />
         </IconButton>
       }
     >
-      <Box sx={{ px: 2, pt: 2, pb: 2 }}>
+      <Box sx={{ px: 2, py: 1.5 }}>
         {loading && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1 }}>
-            <CircularProgress size={16} sx={{ color: 'white' }} />
-            <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
-              Loading data...
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CircularProgress size={14} sx={{ color: 'rgba(255,255,255,0.5)' }} />
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+              Loading…
             </Typography>
           </Box>
         )}
 
         {error && (
-          <Typography sx={{ fontSize: '0.85rem', color: STATUS_COLORS.fail, p: 1 }}>
+          <Typography variant="body2" sx={errorTextSx}>
             {error}
           </Typography>
         )}
@@ -208,9 +199,7 @@ const QualityPanel = ({ netcdfUrl, feature, openInfoModal }) => {
         )}
 
         {!loading && !error && qualityControl && !qualityControl.available && (
-          <Typography
-            sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', p: 1, fontStyle: 'italic' }}
-          >
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
             {noQualityText}
           </Typography>
         )}
