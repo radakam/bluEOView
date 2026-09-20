@@ -5,10 +5,20 @@ const SURFACE_BG = 'rgba(0,0,0,0.25)';
 const SURFACE_BORDER = '1px solid rgba(255,255,255,0.15)';
 const SURFACE_RADIUS = 4;
 
-/** Plot margins, also used to position the uncertainty hatching. */
+/**
+ * Plot margins, also used to position the uncertainty hatching. The compact set
+ * trims every gutter but the right one, which holds the colour bar.
+ */
 export const PLOT_MARGIN = { l: 20, r: 70, t: 70, b: 20 };
+const COMPACT_PLOT_MARGIN = { l: 8, r: 70, t: 52, b: 8 };
 
-/** 16:9 placeholder that the absolutely positioned surface fills. */
+export const plotMargin = (compact) => (compact ? COMPACT_PLOT_MARGIN : PLOT_MARGIN);
+
+/**
+ * 16:9 placeholder that the absolutely positioned surface fills. One ratio on
+ * every screen: the heatmap is stretched to it, so another shape would rescale
+ * the world.
+ */
 export const aspectBoxStyle = { position: 'relative', width: '100%', paddingTop: '56.25%' };
 
 export const surfaceStyle = (loading) => ({
@@ -27,35 +37,41 @@ export const surfaceStyle = (loading) => ({
 
 export const panelStyle = { flex: 1, minWidth: 0 };
 
-export const panelRowStyle = (isNarrow) => ({
+export const panelRowStyle = (stacked) => ({
   display: 'flex',
-  flexDirection: isNarrow ? 'column' : 'row',
+  flexDirection: stacked ? 'column' : 'row',
   gap: 8,
   alignItems: 'stretch',
 });
 
-export const titleStyle = {
+/**
+ * Title and subtitle in normal flow, so a title that wraps pushes the subtitle
+ * down instead of landing on it. Both shrink with the viewport.
+ */
+export const figureHeaderStyle = {
   position: 'absolute',
-  top: 10,
+  top: 8,
   left: 0,
   width: '100%',
+  // Clears the corner close button and the globe's legend at either end.
+  padding: '0 40px',
+  boxSizing: 'border-box',
   textAlign: 'center',
-  fontSize: 19,
-  color: 'white',
   pointerEvents: 'none',
   zIndex: 5,
 };
 
+export const titleStyle = {
+  fontSize: 'clamp(13px, 2.2vw, 19px)',
+  lineHeight: 1.25,
+  color: 'white',
+};
+
 export const subtitleStyle = {
-  position: 'absolute',
-  top: 40,
-  left: 0,
-  width: '100%',
-  textAlign: 'center',
-  fontSize: 16,
+  fontSize: 'clamp(11px, 1.7vw, 16px)',
+  lineHeight: 1.25,
+  marginTop: 2,
   color: 'rgba(255,255,255,0.7)',
-  pointerEvents: 'none',
-  zIndex: 5,
 };
 
 export const overlayStyle = (visible) => ({
@@ -96,12 +112,12 @@ export const zoomHintStyle = (visible) => ({
 
 /** Colour bar drawn next to a globe (Plotly draws its own on the flat map). */
 export const legendStyles = {
-  container: (hasUnit) => ({
+  container: (hasUnit, compact) => ({
     position: 'absolute',
-    top: 50,
-    right: 10,
-    width: hasUnit ? 84 : 70,
-    height: 'calc(100% - 70px)',
+    top: compact ? 64 : 50,
+    right: compact ? 6 : 10,
+    width: (hasUnit ? 84 : 70) * (compact ? 0.7 : 1),
+    height: `calc(100% - ${compact ? 84 : 70}px)`,
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
@@ -117,7 +133,7 @@ export const legendStyles = {
     marginLeft: 4,
     height: '97%',
   },
-  label: { color: 'white', fontSize: 12 },
+  label: (compact) => ({ color: 'white', fontSize: compact ? 9 : 12, lineHeight: 1 }),
   unit: {
     writingMode: 'vertical-rl',
     transform: 'rotate(180deg)',
@@ -141,6 +157,12 @@ export const colorbarBase = {
   x: 1.01,
   outlinecolor: 'rgba(255,255,255,0.15)',
 };
+
+/** The same bar, drawn thinner with smaller ticks where the figure is cramped. */
+export const colorbarStyle = (compact) =>
+  compact
+    ? { ...colorbarBase, thickness: 12, tickfont: { ...colorbarBase.tickfont, size: 9 } }
+    : colorbarBase;
 
 /**
  * Pads the colour bar title so Plotly always moves it clear of the tick labels;

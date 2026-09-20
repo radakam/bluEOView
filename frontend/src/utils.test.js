@@ -6,6 +6,8 @@ import {
   hexToRgb,
   logColorbarTicks,
   observationTitle,
+  spacedIndices,
+  thinColorbarTicks,
   variableSubtitle,
 } from './utils';
 import { ANNUAL_MONTH } from './constants';
@@ -68,5 +70,20 @@ describe('colour bar ticks', () => {
     const { ticktext, zmin } = logColorbarTicks(250);
     expect(ticktext).toEqual(['0', '1', '10', '100', '250']);
     expect(zmin).toBe(0);
+  });
+
+  test('thinning keeps both ends and spreads the rest', () => {
+    const ticks = generateColorbarTicks(0, 100, 11);
+    expect(thinColorbarTicks(ticks, 4).ticktext).toEqual(['0', '40', '80', '100']);
+  });
+
+  test('a bar with room to spare keeps every tick', () => {
+    const ticks = generateColorbarTicks(0, 100, 3);
+    expect(thinColorbarTicks(ticks, 6)).toEqual(ticks);
+  });
+
+  test('spacedIndices always keeps the first and the last', () => {
+    expect([...spacedIndices(10, 4)]).toEqual([0, 3, 6, 9]);
+    expect([...spacedIndices(3, 10)]).toEqual([0, 1, 2]);
   });
 });

@@ -26,7 +26,7 @@ const CollapsiblePanel = ({
         <IconButton
           size="small"
           aria-label={open ? `Collapse ${title}` : `Expand ${title}`}
-          sx={{ color: 'white', pr: 3 }}
+          sx={{ color: 'white', pr: { xs: 0.5, sm: 3 }, flexShrink: 0 }}
         >
           {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
         </IconButton>
@@ -36,7 +36,7 @@ const CollapsiblePanel = ({
 
         {actions && (
           <Box
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}
+            sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: { xs: 0.5, sm: 1 }, ml: 'auto', pl: 1 }}
             onClick={(e) => e.stopPropagation()}
           >
             {actions}

@@ -12,20 +12,31 @@ export const glassPanelSx = {
   overflow: 'hidden',
 };
 
-/** Clickable header strip of a collapsible panel; min height keeps dividers level across panels. */
+/**
+ * Clickable header strip of a collapsible panel; min height keeps dividers level
+ * across panels. It never wraps: the title truncates before the actions do.
+ */
 export const panelHeaderSx = (open) => ({
   display: 'flex',
   alignItems: 'center',
+  flexWrap: 'nowrap',
   boxSizing: 'border-box',
   minHeight: 57,
-  px: 2,
+  px: { xs: 1, sm: 2 },
   py: 1,
   cursor: 'pointer',
   borderBottom: open ? '1px solid rgba(255,255,255,0.08)' : 'none',
   '&:hover': { backgroundColor: 'rgba(255,255,255,0.04)' },
 });
 
-export const panelTitleSx = { fontSize: 19, color: 'white' };
+export const panelTitleSx = {
+  fontSize: { xs: 17, sm: 19 },
+  color: 'white',
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+};
 
 /** Frosted-glass input, used for every dropdown on the control panel. */
 export const glassSelectSx = {
@@ -59,6 +70,8 @@ export const darkMenuProps = {
 
 export const viewToggleSx = {
   '& .MuiToggleButton-root': {
+    px: { xs: 0.75, sm: 1.25 },
+    whiteSpace: 'nowrap',
     color: 'rgba(255,255,255,0.6)',
     borderColor: 'rgba(255,255,255,0.25)',
     '&.Mui-selected': {
@@ -79,6 +92,9 @@ export const layerToggleSx = (active) => ({
   fontSize: 11,
   fontWeight: 600,
   letterSpacing: '0.04em',
+  whiteSpace: 'nowrap',
+  minWidth: 0,
+  px: { xs: 0.75, sm: 1.25 },
   py: '9px',
   '&:hover': {
     borderColor: 'rgba(255,255,255,0.4)',

@@ -59,29 +59,63 @@ const App = () => {
 
   return (
     <Box className="App" sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Logo | title | About, on one line at every width: the side slots share
+          the free space equally, so the title sits centred between them. */}
       <Box
         component="header"
         sx={{
-          position: 'relative',
           display: 'flex',
+          flexWrap: 'wrap',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: 3,
-          textAlign: 'center',
+          columnGap: { xs: 1, sm: 2 },
+          rowGap: 1,
+          px: { xs: 1.5, sm: 2 },
+          pt: { xs: 1.5, sm: 2 },
+          pb: 1,
         }}
       >
-        <Box sx={{ position: 'absolute', top: 25, left: 8, display: { xs: 'none', sm: 'block' } }}>
-          <LogoTile logo={BlueCloudLogo} width={350} />
+        <Box
+          sx={{
+            display: 'flex',
+            minWidth: 0,
+            flex: { xs: '0 0 auto', sm: '1 1 0' },
+          }}
+        >
+          <LogoTile
+            logo={BlueCloudLogo}
+            width={{ xs: 88, sm: 160, md: 220, lg: 320 }}
+            height={{ xs: 24, sm: 48, md: 60, lg: 70 }}
+          />
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box
+          sx={{
+            flex: { xs: '1 1 auto', sm: '0 1 auto' },
+            minWidth: 0,
+            textAlign: 'center',
+          }}
+        >
           <Typography
             variant="h1"
-            sx={{ fontSize: '3.5rem', fontWeight: 'bold', color: 'white', lineHeight: 1, mt: 2 }}
+            sx={{
+              // Scales with the viewport, to hold its line between logo and About.
+              fontSize: { xs: 'clamp(1.2rem, 6vw, 1.7rem)', sm: '2.6rem', md: '3.1rem', lg: '3.5rem' },
+              fontWeight: 'bold',
+              color: 'white',
+              lineHeight: 1.1,
+            }}
           >
             {APP_TITLE}
           </Typography>
-          <Typography variant="h6" sx={{ fontSize: '1.25rem', color: 'white', mt: 0.5 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: { xs: 'clamp(0.68rem, 3.2vw, 0.9rem)', sm: '1.1rem', md: '1.25rem' },
+              color: 'white',
+              lineHeight: 1.3,
+              mt: 0.25,
+            }}
+          >
             Visualisation of{' '}
             <img
               src="/assets/cephalopod_logo.png"
@@ -92,10 +126,18 @@ const App = () => {
           </Typography>
         </Box>
 
-        <ReferencesButton metadata={metadata} />
+        <Box
+          sx={{
+            flex: { xs: '0 0 auto', sm: '1 1 0' },
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <ReferencesButton metadata={metadata} />
+        </Box>
       </Box>
 
-      <Divider sx={{ bgcolor: 'rgba(255,255,255,0.3)', mt: 1, mb: 2 }} />
+      <Divider sx={{ bgcolor: 'rgba(255,255,255,0.3)', mt: 1, mb: { xs: 1.5, sm: 2 } }} />
 
       <InfoModal
         open={welcomeOpen}
@@ -114,7 +156,7 @@ const App = () => {
         shortText={infoModal?.text}
       />
 
-      <Box sx={{ flexGrow: 1, display: 'flex', px: 1 }}>
+      <Box sx={{ flexGrow: 1, display: 'flex', px: { xs: 0.5, sm: 1 } }}>
         <Box
           sx={{
             flexGrow: 1,
@@ -158,7 +200,7 @@ const App = () => {
         </Box>
       </Box>
 
-      <Divider sx={{ bgcolor: 'rgba(255,255,255,0.3)', my: 2 }} />
+      <Divider sx={{ bgcolor: 'rgba(255,255,255,0.3)', my: { xs: 1.5, sm: 2 } }} />
       <Footer />
     </Box>
   );

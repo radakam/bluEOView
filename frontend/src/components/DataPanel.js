@@ -83,7 +83,7 @@ const DataPanel = ({
         flex: 1,
         width: '100%',
         boxSizing: 'border-box',
-        p: 2,
+        p: { xs: 1, sm: 2 },
         backgroundColor: 'rgba(0, 0, 0, 0.25)',
         borderRadius: 1,
         display: 'flex',
@@ -132,7 +132,14 @@ const DataPanel = ({
         </Box>
       </Box>
 
-      <Box sx={{ flex: '1 1 auto', position: 'relative', width: '100%', minHeight: '400px' }}>
+      <Box
+        sx={{
+          flex: '1 1 auto',
+          position: 'relative',
+          width: '100%',
+          minHeight: { xs: 240, sm: 400 },
+        }}
+      >
         {feature ? (
           view === 'map' ? (
             <MapDisplay

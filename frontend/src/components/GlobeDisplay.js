@@ -5,7 +5,7 @@ import ColorLegend from './common/ColorLegend';
 import LoadingOverlay from './common/LoadingOverlay';
 import PanelTitle from './common/PanelTitle';
 import { useElementSize } from '../hooks/useElementSize';
-import { useIsNarrow } from '../hooks/useIsNarrow';
+import { useFigureRow } from '../hooks/useViewport';
 import {
   EARTH_TEXTURE,
   PRESENCE_COLOR,
@@ -25,6 +25,7 @@ import {
 import {
   aspectBoxStyle,
   errorTextStyle,
+  figureHeaderStyle,
   panelRowStyle,
   panelStyle,
   subtitleStyle,
@@ -132,6 +133,7 @@ const GlobePanel = ({
   pointColor,
   legend,
   unit,
+  compact,
   onHide,
 }) => {
   const [containerRef, { width, height }] = useElementSize();
@@ -143,8 +145,10 @@ const GlobePanel = ({
     <div style={{ ...panelStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={aspectBoxStyle}>
         <div ref={containerRef} style={surfaceStyle(loading)}>
-          <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
-          <div style={subtitleStyle}>{subtitle}</div>
+          <div style={figureHeaderStyle}>
+            <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
+            <div style={subtitleStyle}>{subtitle}</div>
+          </div>
           <Globe
             ref={globeRef}
             width={width}
@@ -158,7 +162,7 @@ const GlobePanel = ({
             pointsMerge
             pointTransitionDuration={0}
           />
-          <ColorLegend legend={legend} unit={unit} />
+          <ColorLegend legend={legend} unit={unit} compact={compact} />
           <LoadingOverlay visible={loading} />
           {onHide && <CloseButton onClick={onHide} />}
         </div>
@@ -180,7 +184,6 @@ const GlobeDisplay = ({
   titleLoading = false,
   error = null,
 }) => {
-  const isNarrow = useIsNarrow();
   const registerGlobe = useSyncedGlobes();
 
   const {
@@ -195,6 +198,11 @@ const GlobeDisplay = ({
     minValue = null,
     maxValue = null,
   } = mapData ?? {};
+
+  const showsObs = showObs && hasObs;
+  const [rowRef, { stacked, compact }] = useFigureRow(
+    1 + (showStd ? 1 : 0) + (showsObs ? 1 : 0)
+  );
 
   const scale = useMemo(() => colorStops(VIRIDIS_COLORS), []);
 
@@ -227,12 +235,12 @@ const GlobeDisplay = ({
     [obsType, obsMax, scale]
   );
 
-  const panelProps = { registerGlobe, titleLoading, loading };
+  const panelProps = { registerGlobe, titleLoading, loading, compact };
   const pointOwnColor = (d) => d.color;
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={panelRowStyle(isNarrow)}>
+      <div ref={rowRef} style={panelRowStyle(stacked)}>
         <GlobePanel
           {...panelProps}
           title={fullTitle}
@@ -259,7 +267,7 @@ const GlobeDisplay = ({
           />
         )}
 
-        {showObs && hasObs && (
+        {showsObs && (
           <GlobePanel
             {...panelProps}
             title={observationTitle(baseTitle, obsType)}

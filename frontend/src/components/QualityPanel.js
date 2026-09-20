@@ -166,7 +166,7 @@ const QualityPanel = ({ netcdfUrl, feature, openInfoModal }) => {
         </IconButton>
       }
     >
-      <Box sx={{ px: 2, py: 1.5 }}>
+      <Box sx={{ px: { xs: 1.5, sm: 2 }, py: 1.5 }}>
         {loading && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CircularProgress size={14} sx={{ color: 'rgba(255,255,255,0.5)' }} />

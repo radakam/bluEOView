@@ -31,6 +31,7 @@ import PublicIcon from '@mui/icons-material/Public';
 import SearchIcon from '@mui/icons-material/Search';
 import CollapsiblePanel from './common/CollapsiblePanel';
 import WormsModal from './WormsModal';
+import { useIsPhone } from '../hooks/useViewport';
 import { ANNUAL_MONTH, MONTH_OPTIONS } from '../constants';
 import { noDescriptionText } from '../content';
 import { monthLabel } from '../utils';
@@ -49,11 +50,29 @@ const MONTH_MARKS = MONTH_OPTIONS.filter((opt) => opt.value !== ANNUAL_MONTH).ma
   label: opt.label.slice(0, 3),
 }));
 
+/** Same ticks, but only Jan/Apr/Jul/Oct are named; twelve labels overlap on a phone. */
+const QUARTERLY_MARKS = MONTH_MARKS.map((mark, index) =>
+  index % 3 === 0 ? mark : { value: mark.value }
+);
+
+/** "+ Show SD" where the panel header has the room, "+ SD" once it does not. */
+const layerLabel = (active, name, compact) =>
+  `${active ? '✕' : '+'} ${compact ? name : `${active ? 'Hide' : 'Show'} ${name}`}`;
+
 const monoTextSx = { fontFamily: 'monospace', fontSize: '0.85em' };
 
-const RowLabel = ({ children }) => (
-  <Typography sx={{ width: 110, flexShrink: 0, color: 'white' }}>{children}</Typography>
-);
+/** One labelled control; the label sits beside it, or above it once space runs out. */
+const controlRowSx = {
+  display: 'flex',
+  flexDirection: { xs: 'column', sm: 'row' },
+  alignItems: { xs: 'stretch', sm: 'center' },
+  gap: { xs: 0.75, sm: 1.5 },
+};
+
+/** Label column of a control row; full width once the row stacks. */
+const rowLabelSx = { width: { xs: 'auto', sm: 110 }, flexShrink: 0, color: 'white' };
+
+const RowLabel = ({ children }) => <Typography sx={rowLabelSx}>{children}</Typography>;
 
 /** A source is shown by its label; a pasted URL has none, so show the URL itself. */
 const sourceText = (source) =>
@@ -267,6 +286,8 @@ const VariableControl = ({ feature, featureOptions, onFeatureChange, loading, on
 
 /** Annual/monthly switch and the month slider. */
 const TimeControl = ({ month, onMonthChange }) => {
+  const isPhone = useIsPhone();
+
   // Local state keeps the slider fluid; the committed value drives the fetch.
   const [draftMonth, setDraftMonth] = useState(month);
   useEffect(() => setDraftMonth(month), [month]);
@@ -284,7 +305,7 @@ const TimeControl = ({ month, onMonthChange }) => {
       <RadioGroup
         value={isAnnual ? 'annual' : 'monthly'}
         onChange={(e) => selectMode(e.target.value)}
-        sx={{ flexShrink: 0 }}
+        sx={{ flexShrink: 0, flexDirection: { xs: 'row', sm: 'column' }, columnGap: 2 }}
       >
         {['Annual', 'Monthly'].map((label) => (
           <FormControlLabel
@@ -316,20 +337,31 @@ const TimeControl = ({ month, onMonthChange }) => {
           min={1}
           max={12}
           step={1}
-          marks={MONTH_MARKS}
+          marks={isPhone ? QUARTERLY_MARKS : MONTH_MARKS}
           onChange={(_, value) => setDraftMonth(value)}
           onChangeCommitted={(_, value) => onMonthChange?.(value)}
           sx={{
             flex: 1,
             color: '#fff',
             mb: 1.5,
-            '& .MuiSlider-markLabel': { color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem' },
+            '& .MuiSlider-markLabel': {
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: { xs: '0.65rem', sm: '0.75rem' },
+            },
             '& .MuiSlider-markLabelActive': { color: '#fff', fontWeight: 'bold' },
           }}
         />
         <Typography
           variant="body2"
-          sx={{ color: '#fff', minWidth: 28, textAlign: 'right', fontWeight: 500, pl: 1, mb: 1.5 }}
+          sx={{
+            color: '#fff',
+            minWidth: 28,
+            textAlign: 'right',
+            whiteSpace: 'nowrap',
+            fontWeight: 500,
+            pl: 1,
+            mb: 1.5,
+          }}
         >
           {isAnnual ? '' : monthLabel(draftMonth)}
         </Typography>
@@ -359,6 +391,7 @@ const ControlPanel = ({
   hasObs = false,
 }) => {
   const [wormsOpen, setWormsOpen] = useState(false);
+  const isPhone = useIsPhone();
 
   const selectedFeature = featureOptions.find((f) => f.value === feature);
 
@@ -367,15 +400,16 @@ const ControlPanel = ({
     openInfoModal?.('Variable', parts.join('\n\n') || noDescriptionText);
   };
 
+  // The header is one line, so on a phone these shrink rather than wrap below it.
   const actions = (
     <>
       <Button size="small" variant="outlined" onClick={onToggleStd} sx={layerToggleSx(showStd)}>
-        {showStd ? '✕ Hide SD' : '+ Show SD'}
+        {layerLabel(showStd, 'SD', isPhone)}
       </Button>
 
       {hasObs && (
         <Button size="small" variant="outlined" onClick={onToggleObs} sx={layerToggleSx(showObs)}>
-          {showObs ? '✕ Hide Obs' : '+ Show Obs'}
+          {layerLabel(showObs, 'Obs', isPhone)}
         </Button>
       )}
 
@@ -386,13 +420,13 @@ const ControlPanel = ({
         onChange={(_, value) => value && onViewChange?.(value)}
         sx={viewToggleSx}
       >
-        <ToggleButton value="map">
-          <MapIcon sx={{ fontSize: 16, mr: 0.5 }} />
-          Map
+        <ToggleButton value="map" aria-label="Map view">
+          <MapIcon sx={{ fontSize: 16, mr: isPhone ? 0 : 0.5 }} />
+          {!isPhone && 'Map'}
         </ToggleButton>
-        <ToggleButton value="globe">
-          <PublicIcon sx={{ fontSize: 16, mr: 0.5 }} />
-          Globe
+        <ToggleButton value="globe" aria-label="Globe view">
+          <PublicIcon sx={{ fontSize: 16, mr: isPhone ? 0 : 0.5 }} />
+          {!isPhone && 'Globe'}
         </ToggleButton>
       </ToggleButtonGroup>
     </>
@@ -401,14 +435,22 @@ const ControlPanel = ({
   return (
     <>
       <CollapsiblePanel title="Control Panel" actions={actions}>
-        <Box sx={{ px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box
+          sx={{
+            px: { xs: 1.5, sm: 2 },
+            py: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+          }}
+        >
+          <Box sx={controlRowSx}>
             <RowLabel>Source</RowLabel>
             <SourceControl sources={sources} value={selectedSource} onSelect={onSelectSource} />
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', width: 110, flexShrink: 0 }}>
+          <Box sx={controlRowSx}>
+            <Box sx={{ ...rowLabelSx, display: 'flex', alignItems: 'center' }}>
               <Typography sx={{ color: 'white' }}>Variable</Typography>
               <IconButton
                 size="small"
@@ -428,7 +470,7 @@ const ControlPanel = ({
             />
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={controlRowSx}>
             <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <Typography sx={{ color: 'white', whiteSpace: 'nowrap' }}>Time Frame</Typography>
               <IconButton

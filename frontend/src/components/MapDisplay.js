@@ -4,7 +4,7 @@ import CloseButton from './common/CloseButton';
 import LoadingOverlay from './common/LoadingOverlay';
 import PanelTitle from './common/PanelTitle';
 import ZoomHint from './common/ZoomHint';
-import { useIsNarrow } from '../hooks/useIsNarrow';
+import { useFigureRow } from '../hooks/useViewport';
 import {
   EARTH_TEXTURE,
   PRESENCE_COLORSCALE,
@@ -18,16 +18,18 @@ import {
   generateColorbarTicks,
   logColorbarTicks,
   observationTitle,
+  thinColorbarTicks,
   variableSubtitle,
 } from '../utils';
 import {
   aspectBoxStyle,
-  colorbarBase,
+  colorbarStyle,
   colorbarUnitTitle,
   errorTextStyle,
+  figureHeaderStyle,
   panelRowStyle,
   panelStyle,
-  PLOT_MARGIN,
+  plotMargin,
   subtitleStyle,
   surfaceStyle,
   titleStyle,
@@ -48,11 +50,14 @@ const PLOT_CONFIG = {
   showTips: false,
 };
 
+/** Ticks a cramped colour bar can carry before the labels start touching. */
+const COMPACT_MAX_TICKS = 6;
+
 const UNCERTAIN_HOVER = { bg: 'rgba(160,0,0,0.9)', border: '#ff2222' };
 const NORMAL_HOVER = { bg: 'rgba(30,30,30,0.85)', border: 'rgba(255,255,255,0.2)' };
 
 /** Hatching over high-SD cells, drawn on a canvas because Plotly heatmaps lack pattern fills. */
-const HatchOverlay = ({ uncertaintyMask, lats, lons, zoomedArea }) => {
+const HatchOverlay = ({ uncertaintyMask, lats, lons, zoomedArea, margin }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -120,10 +125,10 @@ const HatchOverlay = ({ uncertaintyMask, lats, lons, zoomedArea }) => {
     <div
       style={{
         position: 'absolute',
-        top: PLOT_MARGIN.t,
-        left: PLOT_MARGIN.l,
-        right: PLOT_MARGIN.r,
-        bottom: PLOT_MARGIN.b,
+        top: margin.t,
+        left: margin.l,
+        right: margin.r,
+        bottom: margin.b,
         pointerEvents: 'none',
         overflow: 'hidden',
         zIndex: 3,
@@ -154,8 +159,10 @@ const MapPanel = ({
   <div style={panelStyle}>
     <div style={aspectBoxStyle}>
       <div style={surfaceStyle(loading)}>
-        <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
-        <div style={subtitleStyle}>{subtitle}</div>
+        <div style={figureHeaderStyle}>
+          <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
+          <div style={subtitleStyle}>{subtitle}</div>
+        </div>
         <Plot
           data={traces}
           layout={layout}
@@ -189,8 +196,6 @@ const MapDisplay = ({
   loading = false,
   error = null,
 }) => {
-  const isNarrow = useIsNarrow();
-
   const {
     lats = [],
     lons = [],
@@ -204,11 +209,20 @@ const MapDisplay = ({
     maxValue = null,
   } = mapData ?? {};
 
+  const showsObs = showObs && hasObs;
+  const [rowRef, { stacked, compact }] = useFigureRow(
+    1 + (showStd ? 1 : 0) + (showsObs ? 1 : 0)
+  );
+
+  // A cramped figure leaves a short colour bar: slimmer strip, fewer labels.
+  const maxTicks = compact ? COMPACT_MAX_TICKS : Infinity;
+  const colorbar = colorbarStyle(compact);
+
   const colorscale = useMemo(() => bandedColorStops(VIRIDIS_COLORS), []);
 
   const meanTicks = useMemo(
-    () => generateColorbarTicks(minValue, maxValue, colorscale.length),
-    [minValue, maxValue, colorscale.length]
+    () => thinColorbarTicks(generateColorbarTicks(minValue, maxValue, colorscale.length), maxTicks),
+    [minValue, maxValue, colorscale.length, maxTicks]
   );
 
   const uncertaintyMask = useMemo(
@@ -257,17 +271,19 @@ const MapDisplay = ({
     return obsData.map((row) => row.map((v) => (v == null ? null : Math.log10(v + 1))));
   }, [obsData, obsType]);
 
-  const obsTicks = useMemo(
-    () =>
-      obsType === 'diversity'
-        ? { tickvals: [0, 1], ticktext: ['Absent', 'Present'], zmin: 0, zmax: 1 }
-        : logColorbarTicks(obsMax),
-    [obsType, obsMax]
-  );
+  const obsTicks = useMemo(() => {
+    if (obsType === 'diversity') {
+      return { tickvals: [0, 1], ticktext: ['Absent', 'Present'], zmin: 0, zmax: 1 };
+    }
+    const ticks = logColorbarTicks(obsMax);
+    return { ...ticks, ...thinColorbarTicks(ticks, maxTicks) };
+  }, [obsType, obsMax, maxTicks]);
+
+  const margin = useMemo(() => plotMargin(compact), [compact]);
 
   const layout = useMemo(
     () => ({
-      margin: PLOT_MARGIN,
+      margin,
       paper_bgcolor: 'rgba(0,0,0,0)',
       plot_bgcolor: 'rgba(0,0,0,0)',
       autosize: true,
@@ -292,7 +308,7 @@ const MapDisplay = ({
         range: zoomedArea?.y ?? undefined,
       },
     }),
-    [zoomedArea]
+    [zoomedArea, margin]
   );
 
   const resetZoom = useCallback(() => onZoomedAreaChange?.(null), [onZoomedAreaChange]);
@@ -332,7 +348,7 @@ const MapDisplay = ({
           zmin: minValue,
           zmax: maxValue,
           colorbar: {
-            ...colorbarBase,
+            ...colorbar,
             tickvals: meanTicks.tickvals,
             ticktext: meanTicks.ticktext,
             ...colorbarUnitTitle(varInfo?.mean?.unit),
@@ -348,6 +364,15 @@ const MapDisplay = ({
       ]
     : [];
 
+  const stdTicks = useMemo(
+    () =>
+      thinColorbarTicks(
+        { tickvals: SD_TICK_PERCENTS, ticktext: SD_TICK_PERCENTS.map((p) => `${p}%`) },
+        maxTicks
+      ),
+    [maxTicks]
+  );
+
   const stdTraces = stdData.length
     ? [
         {
@@ -358,11 +383,7 @@ const MapDisplay = ({
           colorscale: SD_COLORSCALE,
           zmin: 0,
           zmax: 100,
-          colorbar: {
-            ...colorbarBase,
-            tickvals: SD_TICK_PERCENTS,
-            ticktext: SD_TICK_PERCENTS.map((p) => `${p}%`),
-          },
+          colorbar: { ...colorbar, ...stdTicks },
           hovertemplate: 'Lon: %{x}<br>Lat: %{y}<br>SD: %{z}%<extra></extra>',
         },
       ]
@@ -385,7 +406,7 @@ const MapDisplay = ({
             ? {}
             : {
                 colorbar: {
-                  ...colorbarBase,
+                  ...colorbar,
                   tickvals: obsTicks.tickvals,
                   ticktext: obsTicks.ticktext,
                   ...colorbarUnitTitle(varInfo?.obs?.unit),
@@ -400,7 +421,7 @@ const MapDisplay = ({
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={panelRowStyle(isNarrow)}>
+      <div ref={rowRef} style={panelRowStyle(stacked)}>
         <MapPanel
           {...panelProps}
           title={fullTitle}
@@ -413,6 +434,7 @@ const MapDisplay = ({
               lats={lats}
               lons={lons}
               zoomedArea={zoomedArea}
+              margin={margin}
             />
           )}
         </MapPanel>
@@ -427,7 +449,7 @@ const MapDisplay = ({
           />
         )}
 
-        {showObs && hasObs && (
+        {showsObs && (
           <MapPanel
             {...panelProps}
             title={observationTitle(baseTitle, obsType)}

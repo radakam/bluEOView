@@ -105,6 +105,27 @@ export const generateColorbarTicks = (min, max, numBins) => {
   return { tickvals, ticktext };
 };
 
+/** Of `count` labels, the `maxKept` to keep: both ends and an even spread. */
+export const spacedIndices = (count, maxKept) => {
+  const all = new Set(Array.from({ length: count }, (_, i) => i));
+  if (count <= maxKept || maxKept < 2) return all;
+
+  const step = Math.ceil((count - 1) / (maxKept - 1));
+  const kept = new Set();
+  for (let i = 0; i < count - 1; i += step) kept.add(i);
+  kept.add(count - 1);
+  return kept;
+};
+
+/** Drops intermediate colour bar ticks until at most `maxTicks` are left. */
+export const thinColorbarTicks = ({ tickvals, ticktext }, maxTicks) => {
+  const kept = spacedIndices(tickvals.length, maxTicks);
+  return {
+    tickvals: tickvals.filter((_, i) => kept.has(i)),
+    ticktext: ticktext.filter((_, i) => kept.has(i)),
+  };
+};
+
 export const getLegendFromColorscale = (stops, minValue, maxValue) => {
   const { ticktext } = generateColorbarTicks(minValue, maxValue, stops.length);
   return { colors: stops.map(([, color]) => color), labels: ticktext };
