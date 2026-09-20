@@ -1,6 +1,5 @@
 # dependencies
-frontend/node_modules/*
-!frontend/node_modules/.gitkeep
+frontend/node_modules/
 
 /.pnp
 .pnp.js
@@ -11,8 +10,6 @@ coverage
 
 # production
 frontend/build
-frontend_build
-restart_mapmaker.sh
 
 # misc
 .DS_Store
