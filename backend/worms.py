@@ -6,8 +6,8 @@ offered: their author and licence live on a sibling page, while contributed
 thumbnails point at third-party sites that are often plain HTTP or block
 hotlinking.
 
-Lookups are cached in memory: a gallery changes rarely, and every miss costs two
-requests to marinespecies.org.
+Lookups are cached in memory: a gallery changes rarely, and every miss costs a
+fresh round trip to marinespecies.org.
 """
 
 import html
@@ -80,6 +80,19 @@ def species_image(aphia_id):
 
 
 @lru_cache(maxsize=CACHE_SIZE)
+def scientific_names(aphia_id):
+    """The taxon's name and, when it has been renamed, its accepted one.
+
+    Other archives may file a renamed taxon under either name, so both are worth
+    carrying.
+    """
+    record = _get_json(f"{BASE_URL}/rest/AphiaRecordByAphiaID/{aphia_id}")
+    name = record.get("scientificname")
+    accepted = record.get("valid_name")
+    return (name, accepted if accepted and accepted != name else None)
+
+
+@lru_cache(maxsize=CACHE_SIZE)
 def _hosted_picture_ids(aphia_id):
     """WoRMS-hosted picture ids on a taxon page, reviewed ones first.
 
@@ -115,6 +128,8 @@ def _picture_details(picture_id):
     license_url = _first(_LICENSE, page)
     return {
         "available": True,
+        "source": "worms",
+        "sourceName": "WoRMS photogallery",
         "url": _sized(html.unescape(source.group(1))),
         "title": _text(_TITLE, page),
         "author": _text(_AUTHOR, page),
@@ -126,14 +141,25 @@ def _picture_details(picture_id):
 
 
 def _get(url):
+    return _request(url).text
+
+
+def _get_json(url):
+    return _request(url, accept="application/json").json()
+
+
+def _request(url, accept=None):
     response = requests.get(
         url,
-        # Name the caller rather than send the library default.
-        headers={"User-Agent": "CEPHALOView (https://github.com/radakam/bluEOView)"},
+        headers={
+            # Name the caller rather than send the library default.
+            "User-Agent": "CEPHALOView (https://github.com/radakam/bluEOView)",
+            **({"Accept": accept} if accept else {}),
+        },
         timeout=WORMS_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
-    return response.text
+    return response
 
 
 def _first(pattern, page):

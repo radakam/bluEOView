@@ -24,7 +24,7 @@ const Placeholder = ({ children }) => (
   <Box sx={{ ...frameSx, height: 'auto', py: 1.5, gap: 1.5 }}>{children}</Box>
 );
 
-/** WoRMS photograph of one taxon, fetched only while `enabled`; a missing one is not an error. */
+/** Photograph of one taxon, fetched only while `enabled`; a missing one is not an error. */
 const SpeciesPhoto = ({ aphiaId, enabled }) => {
   const { data, loading, error } = useAsyncData(
     (signal) => fetchSpeciesImage(aphiaId, signal),
@@ -47,13 +47,17 @@ const SpeciesPhoto = ({ aphiaId, enabled }) => {
     return (
       <Placeholder>
         <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.7 }}>
-          {error ? 'Could not reach the WoRMS photogallery.' : 'No photograph in the WoRMS gallery.'}
+          {error
+            ? 'Could not reach the photo archives.'
+            : 'No photograph in WoRMS or Wikimedia Commons.'}
         </Typography>
       </Placeholder>
     );
   }
 
-  const { url, title, description, author, licenseName, licenseUrl, pageUrl } = data;
+  const { url, title, description, author, licenseName, licenseUrl, pageUrl, sourceName } = data;
+  // Commons also carries plates out of copyright: credit, not claim.
+  const credit = licenseUrl ? `\u00a9 ${author}` : author;
 
   return (
     <Box>
@@ -68,25 +72,29 @@ const SpeciesPhoto = ({ aphiaId, enabled }) => {
         />
       </Box>
 
-      {/* The gallery also holds drawings, so show what the picture is. */}
+      {/* Both archives also hold drawings, so show what the picture is. */}
       {title && (
         <Typography sx={{ ...captionSx, color: 'text.primary', mt: 0.75 }}>{title}</Typography>
       )}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 0.75 }}>
-        {author && <Typography sx={captionSx}>&copy; {author}</Typography>}
-        {licenseName && (
-          <Link href={licenseUrl} target="_blank" rel="noopener noreferrer" sx={captionMetricsSx}>
-            {licenseName}
-          </Link>
-        )}
+        {author && <Typography sx={captionSx}>{credit}</Typography>}
+        {/* Public domain names no deed to link to. */}
+        {licenseName &&
+          (licenseUrl ? (
+            <Link href={licenseUrl} target="_blank" rel="noopener noreferrer" sx={captionMetricsSx}>
+              {licenseName}
+            </Link>
+          ) : (
+            <Typography sx={captionSx}>{licenseName}</Typography>
+          ))}
         <Link
           href={pageUrl}
           target="_blank"
           rel="noopener noreferrer"
           sx={{ ...captionMetricsSx, ml: 'auto' }}
         >
-          WoRMS photogallery
+          {sourceName || 'WoRMS photogallery'}
         </Link>
       </Box>
     </Box>

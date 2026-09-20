@@ -20,6 +20,9 @@ DOWNLOAD_CHUNK_BYTES = 1 << 20  # 1 MB
 # Requests to marinespecies.org, which only serve a small HTML page each.
 WORMS_TIMEOUT_SECONDS = int(os.environ.get("WORMS_TIMEOUT_SECONDS", 15))
 
+# Requests to the Commons API, made only when WoRMS has no picture.
+WIKIMEDIA_TIMEOUT_SECONDS = int(os.environ.get("WIKIMEDIA_TIMEOUT_SECONDS", 15))
+
 DEFAULT_CACHE_DIR = "/var/cephaloview_data"
 LOCAL_CACHE_DIR = Path(__file__).resolve().parent / ".cache"
 

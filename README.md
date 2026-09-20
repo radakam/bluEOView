@@ -42,6 +42,8 @@ The same panels on a 3D globe drawn with `react-globe.gl`, sampling every third 
 
 ### `InfoModal` / `ReferencesModal` / `WormsModal`
 Explanatory text, dataset references, and the taxonomic classification fetched from the WoRMS registry.
+`WormsModal` also shows a photograph of the taxon, from the WoRMS photogallery or, where it holds none,
+from Wikimedia Commons.
 
 ## Project Structure
 
@@ -51,6 +53,8 @@ backend/
   api.py        HTTP handlers for /api/*
   datasets.py   NetCDF loading, caching and derived values
   quality.py    Quality-control table extraction
+  worms.py      Taxon names and photographs from the WoRMS registry
+  wikimedia.py  Photograph search on Wikimedia Commons, for taxa WoRMS has no picture of
   storage.py    Download cache on disk
   config.py     Environment-derived settings
 
