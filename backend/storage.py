@@ -23,6 +23,14 @@ log = logging.getLogger(__name__)
 # Files downloaded for a user-supplied URL: 40 hex characters plus the extension.
 SHA1_FILENAME = re.compile(r"^[0-9a-fA-F]{40}\.nc$")
 
+# Signatures a NetCDF reader accepts: classic, 64-bit offset and CDF-5 for NetCDF-3,
+# the HDF5 superblock for NetCDF-4. HDF5 may sit behind a user block, so also look
+# at the offsets a user block can end at.
+NETCDF3_MAGIC = (b"CDF\x01", b"CDF\x02", b"CDF\x05")
+HDF5_MAGIC = b"\x89HDF\r\n\x1a\n"
+HDF5_OFFSETS = (0, 512, 1024, 2048)
+HEAD_BYTES = max(HDF5_OFFSETS) + len(HDF5_MAGIC)
+
 # Maps a remote URL to the local file holding its contents.
 _downloaded_files = {}
 
@@ -73,16 +81,38 @@ def _url_digest(file_url):
     return hashlib.sha1(file_url.encode("utf-8")).hexdigest()
 
 
+def _require_netcdf(file_url, head):
+    """Raise unless `head`, the start of the file, carries a NetCDF signature."""
+    if head.startswith(NETCDF3_MAGIC):
+        return
+    if any(head[at:at + len(HDF5_MAGIC)] == HDF5_MAGIC for at in HDF5_OFFSETS):
+        return
+    raise ValueError(
+        f"{file_url} did not return a NetCDF file (starts with {head[:8]!r})"
+    )
+
+
 def _download(file_url, target_path):
-    """Stream `file_url` to a temporary file, then move it into place atomically."""
+    """Stream `file_url` to a temporary file, then move it into place atomically.
+
+    The signature is checked as soon as enough bytes have arrived, so a URL serving
+    something else, an error page say, is abandoned before it reaches the cache."""
     log.info("Downloading: %s", file_url)
     response = requests.get(file_url, stream=True, timeout=DOWNLOAD_TIMEOUT_SECONDS)
     response.raise_for_status()
 
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".nc.part", dir=CACHE_DIR)
     try:
+        head, checked = b"", False
         for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_BYTES):
+            if not checked:
+                head += chunk
+                if len(head) >= HEAD_BYTES:
+                    _require_netcdf(file_url, head)
+                    checked = True
             tmp.write(chunk)
+        if not checked:  # file shorter than HEAD_BYTES
+            _require_netcdf(file_url, head)
         tmp.close()
         os.replace(tmp.name, target_path)
     except Exception:
