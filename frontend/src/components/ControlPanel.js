@@ -31,10 +31,11 @@ import PublicIcon from '@mui/icons-material/Public';
 import SearchIcon from '@mui/icons-material/Search';
 import CollapsiblePanel from './common/CollapsiblePanel';
 import WormsModal from './WormsModal';
+import { SpeciesThumbnail } from './SpeciesCard';
 import { useIsPhone } from '../hooks/useViewport';
 import { ANNUAL_MONTH, MONTH_OPTIONS } from '../constants';
 import { noDescriptionText } from '../content';
-import { monthLabel } from '../utils';
+import { isWormsTaxon, monthLabel } from '../utils';
 import {
   darkMenuProps,
   frostedDialogSx,
@@ -175,9 +176,6 @@ const SourceControl = ({ sources, value, onSelect }) => {
     </Box>
   );
 };
-
-/** True for a positive integer AphiaID; diversity datasets put labels in `target_id`. */
-const isWormsTaxon = (option) => /^[1-9]\d*$/.test(String(option?.target_id ?? '').trim());
 
 /**
  * Opens the WoRMS record of the selected taxon. Acts on mousedown without taking
@@ -389,6 +387,7 @@ const ControlPanel = ({
   showObs = false,
   onToggleObs,
   hasObs = false,
+  photo = null,
 }) => {
   const [wormsOpen, setWormsOpen] = useState(false);
   const isPhone = useIsPhone();
@@ -461,13 +460,16 @@ const ControlPanel = ({
                 <InfoOutlinedIcon fontSize="small" />
               </IconButton>
             </Box>
-            <VariableControl
-              feature={feature}
-              featureOptions={featureOptions}
-              onFeatureChange={onFeatureChange}
-              loading={featuresLoading}
-              onShowWorms={() => setWormsOpen(true)}
-            />
+            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <VariableControl
+                feature={feature}
+                featureOptions={featureOptions}
+                onFeatureChange={onFeatureChange}
+                loading={featuresLoading}
+                onShowWorms={() => setWormsOpen(true)}
+              />
+              {photo && <SpeciesThumbnail photo={photo} onClick={() => setWormsOpen(true)} />}
+            </Box>
           </Box>
 
           <Box sx={controlRowSx}>

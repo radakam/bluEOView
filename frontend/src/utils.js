@@ -25,6 +25,9 @@ export const variableSubtitle = (varInfo, key) => {
   return parts.length ? parts.join(' · ') : null;
 };
 
+/** True for a positive integer AphiaID; diversity datasets put labels in `target_id`. */
+export const isWormsTaxon = (option) => /^[1-9]\d*$/.test(String(option?.target_id ?? '').trim());
+
 // --- colour scales --------------------------------------------------------
 
 /** Evenly spaced stops, one per colour: a continuous gradient. */

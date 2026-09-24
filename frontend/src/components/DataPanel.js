@@ -6,8 +6,10 @@ import MapDisplay from './MapDisplay';
 import QualityPanel from './QualityPanel';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMapData } from '../hooks/useMapData';
+import { useSpeciesImage } from '../hooks/useSpeciesImage';
+import { useIsPhone } from '../hooks/useViewport';
 import { ANNUAL_MONTH } from '../constants';
-import { figureTitle } from '../utils';
+import { figureTitle, isWormsTaxon } from '../utils';
 
 /** How long the month slider must rest before the next grid is fetched. */
 const MONTH_DEBOUNCE_MS = 500;
@@ -55,13 +57,20 @@ const DataPanel = ({
 
   // Update titles only once the matching grids arrive.
   const [titles, setTitles] = useState(NO_TITLES);
-  const featureLabel = featureOptions.find((f) => f.value === feature)?.label ?? feature ?? '';
+  const selectedFeature = featureOptions.find((f) => f.value === feature);
+  const featureLabel = selectedFeature?.label ?? feature ?? '';
 
   useEffect(() => {
     if (!mapData) return;
     setTitles({ full: figureTitle(featureLabel, debouncedMonth), base: featureLabel });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapData]);
+
+  // A phone's figure is too small for the photo, so it sits by the variable picker instead.
+  const isPhone = useIsPhone();
+  const photo = useSpeciesImage(
+    isWormsTaxon(selectedFeature) ? String(selectedFeature.target_id).trim() : null
+  );
 
   const displayProps = {
     mapData,
@@ -75,6 +84,7 @@ const DataPanel = ({
     varInfo,
     loading,
     error,
+    photo: isPhone ? null : photo,
   };
 
   return (
@@ -120,6 +130,7 @@ const DataPanel = ({
             showObs={showObs}
             onToggleObs={() => setShowObs((v) => !v)}
             hasObs={mapData?.hasObs ?? false}
+            photo={isPhone ? photo : null}
           />
         </Box>
 

@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Plot from 'react-plotly.js';
 import CloseButton from './common/CloseButton';
 import LoadingOverlay from './common/LoadingOverlay';
 import PanelTitle from './common/PanelTitle';
+import SpeciesCard from './SpeciesCard';
 import ZoomHint from './common/ZoomHint';
 import { useFigureRow } from '../hooks/useViewport';
 import {
@@ -154,32 +155,39 @@ const MapPanel = ({
   onResetZoom,
   isZoomed,
   onHide,
+  onPlotArea,
   children,
-}) => (
-  <div style={panelStyle}>
-    <div style={aspectBoxStyle}>
-      <div style={surfaceStyle(loading)}>
-        <div style={figureHeaderStyle}>
-          <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
-          <div style={subtitleStyle}>{subtitle}</div>
+}) => {
+  const reportPlotArea = onPlotArea && ((_, graphDiv) => onPlotArea(graphDiv._fullLayout._size));
+
+  return (
+    <div style={panelStyle}>
+      <div style={aspectBoxStyle}>
+        <div style={surfaceStyle(loading)}>
+          <div style={figureHeaderStyle}>
+            <PanelTitle title={title} loading={titleLoading} style={titleStyle} />
+            <div style={subtitleStyle}>{subtitle}</div>
+          </div>
+          <Plot
+            data={traces}
+            layout={layout}
+            useResizeHandler
+            style={{ width: '100%', height: '100%' }}
+            onRelayout={onRelayout}
+            onDoubleClick={onResetZoom}
+            config={PLOT_CONFIG}
+            onInitialized={reportPlotArea}
+            onUpdate={reportPlotArea}
+          />
+          {children}
+          <LoadingOverlay visible={loading} />
+          <ZoomHint visible={isZoomed && !loading} />
+          {onHide && <CloseButton onClick={onHide} />}
         </div>
-        <Plot
-          data={traces}
-          layout={layout}
-          useResizeHandler
-          style={{ width: '100%', height: '100%' }}
-          onRelayout={onRelayout}
-          onDoubleClick={onResetZoom}
-          config={PLOT_CONFIG}
-        />
-        {children}
-        <LoadingOverlay visible={loading} />
-        <ZoomHint visible={isZoomed && !loading} />
-        {onHide && <CloseButton onClick={onHide} />}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const MapDisplay = ({
   mapData,
@@ -195,6 +203,7 @@ const MapDisplay = ({
   varInfo = null,
   loading = false,
   error = null,
+  photo = null,
 }) => {
   const {
     lats = [],
@@ -280,6 +289,13 @@ const MapDisplay = ({
   }, [obsType, obsMax, maxTicks]);
 
   const margin = useMemo(() => plotMargin(compact), [compact]);
+
+  // Plotly may widen the margins to fit the colour bar, so track the plot area it actually drew.
+  const [plotArea, setPlotArea] = useState(null);
+  const handlePlotArea = useCallback(
+    ({ t, r }) => setPlotArea((prev) => (prev?.t === t && prev?.r === r ? prev : { t, r })),
+    []
+  );
 
   const layout = useMemo(
     () => ({
@@ -427,6 +443,7 @@ const MapDisplay = ({
           title={fullTitle}
           subtitle={variableSubtitle(varInfo, 'mean')}
           traces={meanTraces}
+          onPlotArea={handlePlotArea}
         >
           {hasHighSD && (
             <HatchOverlay
@@ -437,6 +454,8 @@ const MapDisplay = ({
               margin={margin}
             />
           )}
+          {/* Top-right corner of the plot area. */}
+          <SpeciesCard photo={photo} top={plotArea?.t ?? margin.t} right={plotArea?.r ?? margin.r} />
         </MapPanel>
 
         {showStd && (
