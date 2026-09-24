@@ -155,10 +155,16 @@ const MapPanel = ({
   onResetZoom,
   isZoomed,
   onHide,
-  onPlotArea,
+  photo,
   children,
 }) => {
-  const reportPlotArea = onPlotArea && ((_, graphDiv) => onPlotArea(graphDiv._fullLayout._size));
+  // Plotly may widen the margins for the colour bar, so place the photo from the drawn plot area.
+  // Kept here: in MapDisplay, each update would redraw the map and report again, in a loop.
+  const [plotArea, setPlotArea] = useState(null);
+  const reportPlotArea = (_, graphDiv) => {
+    const { t, r } = graphDiv._fullLayout._size;
+    setPlotArea((prev) => (prev?.t === t && prev?.r === r ? prev : { t, r }));
+  };
 
   return (
     <div style={panelStyle}>
@@ -180,6 +186,8 @@ const MapPanel = ({
             onUpdate={reportPlotArea}
           />
           {children}
+          {/* Top-right corner of the plot area. */}
+          {plotArea && <SpeciesCard photo={photo} top={plotArea.t} right={plotArea.r} />}
           <LoadingOverlay visible={loading} />
           <ZoomHint visible={isZoomed && !loading} />
           {onHide && <CloseButton onClick={onHide} />}
@@ -289,13 +297,6 @@ const MapDisplay = ({
   }, [obsType, obsMax, maxTicks]);
 
   const margin = useMemo(() => plotMargin(compact), [compact]);
-
-  // Plotly may widen the margins to fit the colour bar, so track the plot area it actually drew.
-  const [plotArea, setPlotArea] = useState(null);
-  const handlePlotArea = useCallback(
-    ({ t, r }) => setPlotArea((prev) => (prev?.t === t && prev?.r === r ? prev : { t, r })),
-    []
-  );
 
   const layout = useMemo(
     () => ({
@@ -443,7 +444,7 @@ const MapDisplay = ({
           title={fullTitle}
           subtitle={variableSubtitle(varInfo, 'mean')}
           traces={meanTraces}
-          onPlotArea={handlePlotArea}
+          photo={photo}
         >
           {hasHighSD && (
             <HatchOverlay
@@ -454,8 +455,6 @@ const MapDisplay = ({
               margin={margin}
             />
           )}
-          {/* Top-right corner of the plot area. */}
-          <SpeciesCard photo={photo} top={plotArea?.t ?? margin.t} right={plotArea?.r ?? margin.r} />
         </MapPanel>
 
         {showStd && (
