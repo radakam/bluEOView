@@ -13,26 +13,22 @@ const photo = {
   pageUrl: 'https://www.marinespecies.org/aphia.php?p=image&pic=9048',
 };
 
-test('renders nothing without a photograph', () => {
-  const { container } = render(<SpeciesCard photo={null} top={0} right={0} />);
-  expect(container).toBeEmptyDOMElement();
-});
-
-test('shows the photograph with its credit and source', () => {
-  render(<SpeciesCard photo={photo} top={0} right={0} />);
+test('shows the photograph with its credit and licence', () => {
+  render(<SpeciesCard photo={photo} />);
 
   expect(screen.getByAltText('Oithona similis')).toHaveAttribute('src', photo.url);
-  expect(screen.getByRole('link', { name: 'Oithona similis' })).toHaveAttribute('href', photo.pageUrl);
   expect(screen.getByText(/Kwasniewski/)).toBeInTheDocument();
   expect(screen.getByText('CC BY-NC-SA 4.0')).toHaveAttribute('href', photo.licenseUrl);
 });
 
-test('stays hidden once dismissed, until another taxon is picked', () => {
-  const { rerender } = render(<SpeciesCard photo={photo} top={0} right={0} />);
-  fireEvent.click(screen.getByLabelText('Hide photograph'));
-  expect(screen.queryByAltText('Oithona similis')).not.toBeInTheDocument();
+test('credits a public-domain work without a ©', () => {
+  render(<SpeciesCard photo={{ ...photo, licenseName: 'Public domain', licenseUrl: null }} />);
+  expect(screen.getByText(/Kwasniewski/).textContent).not.toMatch('©');
+});
 
-  const next = { ...photo, url: 'https://example.org/calanus.jpg', title: 'Calanus finmarchicus' };
-  rerender(<SpeciesCard photo={next} top={0} right={0} />);
-  expect(screen.getByAltText('Calanus finmarchicus')).toBeInTheDocument();
+test('opens the WoRMS record when the picture is clicked', () => {
+  const onClick = jest.fn();
+  render(<SpeciesCard photo={photo} onClick={onClick} />);
+  fireEvent.click(screen.getByLabelText('Show photograph and WoRMS record'));
+  expect(onClick).toHaveBeenCalled();
 });

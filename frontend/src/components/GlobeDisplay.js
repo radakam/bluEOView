@@ -4,7 +4,6 @@ import CloseButton from './common/CloseButton';
 import ColorLegend from './common/ColorLegend';
 import LoadingOverlay from './common/LoadingOverlay';
 import PanelTitle from './common/PanelTitle';
-import SpeciesCard from './SpeciesCard';
 import { useElementSize } from '../hooks/useElementSize';
 import { useFigureRow } from '../hooks/useViewport';
 import {
@@ -27,7 +26,6 @@ import {
   aspectBoxStyle,
   errorTextStyle,
   figureHeaderStyle,
-  legendStyles,
   panelRowStyle,
   panelStyle,
   subtitleStyle,
@@ -137,7 +135,6 @@ const GlobePanel = ({
   unit,
   compact,
   onHide,
-  children,
 }) => {
   const [containerRef, { width, height }] = useElementSize();
   const globeRef = useRef(null);
@@ -166,7 +163,6 @@ const GlobePanel = ({
             pointTransitionDuration={0}
           />
           <ColorLegend legend={legend} unit={unit} compact={compact} />
-          {children}
           <LoadingOverlay visible={loading} />
           {onHide && <CloseButton onClick={onHide} />}
         </div>
@@ -187,7 +183,6 @@ const GlobeDisplay = ({
   loading = false,
   titleLoading = false,
   error = null,
-  photo = null,
 }) => {
   const registerGlobe = useSyncedGlobes();
 
@@ -241,7 +236,6 @@ const GlobeDisplay = ({
   );
 
   const panelProps = { registerGlobe, titleLoading, loading, compact };
-  const meanLegendBox = legendStyles.container(Boolean(varInfo?.mean?.unit), compact);
   const pointOwnColor = (d) => d.color;
 
   return (
@@ -259,14 +253,7 @@ const GlobeDisplay = ({
           }
           legend={meanLegend}
           unit={varInfo?.mean?.unit}
-        >
-          {/* Top-right, just left of the colour legend. */}
-          <SpeciesCard
-            photo={photo}
-            top={meanLegendBox.top}
-            right={meanLegendBox.right + meanLegendBox.width + 8}
-          />
-        </GlobePanel>
+        />
 
         {showStd && (
           <GlobePanel

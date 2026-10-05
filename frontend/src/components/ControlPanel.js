@@ -31,7 +31,7 @@ import PublicIcon from '@mui/icons-material/Public';
 import SearchIcon from '@mui/icons-material/Search';
 import CollapsiblePanel from './common/CollapsiblePanel';
 import WormsModal from './WormsModal';
-import { SpeciesThumbnail } from './SpeciesCard';
+import SpeciesCard, { SpeciesThumbnail } from './SpeciesCard';
 import { useIsPhone } from '../hooks/useViewport';
 import { ANNUAL_MONTH, MONTH_OPTIONS } from '../constants';
 import { noDescriptionText } from '../content';
@@ -74,6 +74,21 @@ const controlRowSx = {
 const rowLabelSx = { width: { xs: 'auto', sm: 110 }, flexShrink: 0, color: 'white' };
 
 const RowLabel = ({ children }) => <Typography sx={rowLabelSx}>{children}</Typography>;
+
+/** Row label with an info button beside it. */
+const InfoLabel = ({ label, onInfo, sx }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', ...sx }}>
+    <Typography sx={{ color: 'white', whiteSpace: 'nowrap' }}>{label}</Typography>
+    <IconButton
+      size="small"
+      aria-label={`About the ${label.toLowerCase()}`}
+      sx={{ color: '#fff', ml: 0.5, p: 0.25 }}
+      onClick={onInfo}
+    >
+      <InfoOutlinedIcon fontSize="small" />
+    </IconButton>
+  </Box>
+);
 
 /** A source is shown by its label; a pasted URL has none, so show the URL itself. */
 const sourceText = (source) =>
@@ -398,6 +413,8 @@ const ControlPanel = ({
     const parts = [selectedFeature?.standard_name, selectedFeature?.long_name].filter(Boolean);
     openInfoModal?.('Variable', parts.join('\n\n') || noDescriptionText);
   };
+  const showTimeInfo = () => openInfoModal?.('Time Frame', timeLongName || noDescriptionText);
+  const showWorms = () => setWormsOpen(true);
 
   // The header is one line, so on a phone these shrink rather than wrap below it.
   const actions = (
@@ -448,43 +465,30 @@ const ControlPanel = ({
             <SourceControl sources={sources} value={selectedSource} onSelect={onSelectSource} />
           </Box>
 
-          <Box sx={controlRowSx}>
-            <Box sx={{ ...rowLabelSx, display: 'flex', alignItems: 'center' }}>
-              <Typography sx={{ color: 'white' }}>Variable</Typography>
-              <IconButton
-                size="small"
-                aria-label="About this variable"
-                sx={{ color: '#fff', ml: 0.5, p: 0.25 }}
-                onClick={showVariableInfo}
-              >
-                <InfoOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <VariableControl
-                feature={feature}
-                featureOptions={featureOptions}
-                onFeatureChange={onFeatureChange}
-                loading={featuresLoading}
-                onShowWorms={() => setWormsOpen(true)}
-              />
-              {photo && <SpeciesThumbnail photo={photo} onClick={() => setWormsOpen(true)} />}
-            </Box>
-          </Box>
+          {/* The desktop photo spans the Variable and Time Frame rows. */}
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={controlRowSx}>
+                <InfoLabel label="Variable" onInfo={showVariableInfo} sx={rowLabelSx} />
+                <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <VariableControl
+                    feature={feature}
+                    featureOptions={featureOptions}
+                    onFeatureChange={onFeatureChange}
+                    loading={featuresLoading}
+                    onShowWorms={showWorms}
+                  />
+                  {photo && isPhone && <SpeciesThumbnail photo={photo} onClick={showWorms} />}
+                </Box>
+              </Box>
 
-          <Box sx={controlRowSx}>
-            <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <Typography sx={{ color: 'white', whiteSpace: 'nowrap' }}>Time Frame</Typography>
-              <IconButton
-                size="small"
-                aria-label="About the time frame"
-                sx={{ color: '#fff', ml: 0.5, p: 0.25 }}
-                onClick={() => openInfoModal?.('Time Frame', timeLongName || noDescriptionText)}
-              >
-                <InfoOutlinedIcon fontSize="small" />
-              </IconButton>
+              <Box sx={controlRowSx}>
+                <InfoLabel label="Time Frame" onInfo={showTimeInfo} sx={{ flexShrink: 0 }} />
+                <TimeControl month={month} onMonthChange={onMonthChange} />
+              </Box>
             </Box>
-            <TimeControl month={month} onMonthChange={onMonthChange} />
+
+            {photo && !isPhone && <SpeciesCard photo={photo} onClick={showWorms} />}
           </Box>
         </Box>
       </CollapsiblePanel>

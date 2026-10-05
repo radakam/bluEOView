@@ -7,7 +7,6 @@ import QualityPanel from './QualityPanel';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMapData } from '../hooks/useMapData';
 import { useSpeciesImage } from '../hooks/useSpeciesImage';
-import { useIsPhone } from '../hooks/useViewport';
 import { ANNUAL_MONTH } from '../constants';
 import { figureTitle, isWormsTaxon } from '../utils';
 
@@ -66,8 +65,6 @@ const DataPanel = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapData]);
 
-  // A phone's figure is too small for the photo, so it sits by the variable picker instead.
-  const isPhone = useIsPhone();
   const photo = useSpeciesImage(
     isWormsTaxon(selectedFeature) ? String(selectedFeature.target_id).trim() : null
   );
@@ -84,7 +81,6 @@ const DataPanel = ({
     varInfo,
     loading,
     error,
-    photo: isPhone ? null : photo,
   };
 
   return (
@@ -130,7 +126,7 @@ const DataPanel = ({
             showObs={showObs}
             onToggleObs={() => setShowObs((v) => !v)}
             hasObs={mapData?.hasObs ?? false}
-            photo={isPhone ? photo : null}
+            photo={photo}
           />
         </Box>
 
